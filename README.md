@@ -46,6 +46,10 @@ tinyc2> listener start [plugin name] [listener name] [/path/to/config.yaml]
 tinyc2> listener generate [listener name]
 ```
 
+
+https://github.com/user-attachments/assets/28a366fc-15a3-4a91-81ea-e947e300ff35
+
+
 # Technical Details
 
 In the recent releases of Havoc Pro and Cobalt Strike, a few new features caught my attention and found them really cool. The first one was Havoc Pro's Runtime Channel Switching. It's built into the Kaine-kit extension and allows the operator to reconfigure implant listener configuration or switch between different listeners at runtime.
