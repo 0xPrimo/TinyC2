@@ -1,0 +1,5 @@
+bindhost: "0.0.0.0"
+bindport: 9090
+
+connhost: "10.10.10.10"
+connport: 9090

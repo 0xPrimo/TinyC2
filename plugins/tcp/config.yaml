@@ -1,0 +1,5 @@
+bindhost: "0.0.0.0"
+bindport: "8080"
+
+connhost: "10.24.84.134"
+connport: "8080"
