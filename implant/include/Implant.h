@@ -27,11 +27,9 @@ inline ULONG RandomUint32() {
 	return RtlRandomEx(&seed);
 }
 
-// IImplant interface for user to use at runtime ( register protocol, etc )
+// IImplant interface
 //
 typedef struct {
-	BOOL(*ChannelRegister)(IChannel*);
-	
 	// implant id
 	DWORD SessionID;
 } IImplant;
