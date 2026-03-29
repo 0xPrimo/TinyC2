@@ -26,8 +26,8 @@ type ProtocolConfig struct {
 	BindPort uint16 `yaml:"bindport"`
 }
 
-// NewProtocolListener plugin manage will call this function when the user
-// want to create a new listener object. the function will receive engine interface,
+// NewProtocolListener plugin manager will call this function when the user
+// wants to create a new listener object. the function will receive engine interface,
 // name and path to config as argument
 func NewProtocolListener(engine sdk.IEngine, name string, config string) (sdk.IListener, error) {
 	data, err := os.ReadFile(config)
