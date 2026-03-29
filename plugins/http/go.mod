@@ -2,13 +2,10 @@ module http
 
 go 1.26.1
 
+require github.com/gin-gonic/gin v1.12.0
 
 require (
-	github.com/gin-gonic/gin v1.12.0
-	tinyc2sdk v0.0.0-00010101000000-000000000000
-)
-
-require (
+	github.com/0xPrimo/TinyC2/sdk v0.0.0-20260329201929-4a4fcd38b030 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.15.0 // indirect
 	github.com/bytedance/sonic/loader v0.5.0 // indirect
