@@ -69,7 +69,8 @@ To see how TinyC2 works, we first need to look at its core. TinyC2 is made up of
 - **Listener Management:** This component handles the listeners, allowing the user to start or stop them, as well as generate implant payloads from specific listener.
 - **Implant Management:** This component  responsible for managing implant sessions for example request implant to execute command or terminating the session.
 
-<img width="1220" height="773" alt="image" src="https://github.com/user-attachments/assets/c42e02c5-bff4-4ff1-b2c5-df4c18b7673e" />
+<img width="1220" height="773" alt="screenshot-2026-03-28_12-32-39" src="https://github.com/user-attachments/assets/b4b00d59-0111-4953-8e4e-bc897f83578b" />
+
 
 ## Custom Listeners
 In order to add a custom listener to TinyC2 the user should create a go plugin, think of it as a `DLL` that the server can load at runtime. this plugin should have one export with name `NewListener` and must return an object that implements `IListener` interface.
@@ -83,7 +84,7 @@ This PIC will be used in two cases:
 
 See example.
 
-<img width="1488" height="1016" alt="image" src="https://github.com/user-attachments/assets/de33b941-5e07-4258-813f-3d481cef9ddd" />
+<img width="1488" height="1016" alt="screenshot-2026-03-28_12-31-49" src="https://github.com/user-attachments/assets/b7f55e35-39e5-4ebf-985d-d94aa1e0a977" />
 
 # Todo
 - more listener plugins
