@@ -1,6 +1,10 @@
 #ifndef _PHNT_H_
 #define _PHNT_H_
 
+//
+// https://github.com/mrexodia/phnt-single-header
+//
+
 #include <windows.h>
 // Linked lists
 
