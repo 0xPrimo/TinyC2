@@ -95,10 +95,6 @@ BOOL CommandPs(json& args, string artifact, json& result) {
             process["account"]  = GetProcessTokenUser(pi->InheritedFromUniqueProcessId);
             pslist.push_back(process);
 
-    
-            // printf("%d | %d | %s | %ls\n", pi->InheritedFromUniqueProcessId, pi->UniqueProcessId,
-            //                                 GetProcessTokenUser(pi->InheritedFromUniqueProcessId).c_str(),
-            //                                 pi->ImageName.Buffer);
 
             if (!pi->NextEntryOffset) {
                 break;
@@ -106,8 +102,6 @@ BOOL CommandPs(json& args, string artifact, json& result) {
 
             pi = (SYSTEM_PROCESS_INFORMATION*)((ULONG_PTR)pi + pi->NextEntryOffset);
         }
-
-        std::cout << pslist.dump(4) << std::endl;
 
         result["name"]      = "ps"; 
         result["artifact"]  = pslist.dump();
