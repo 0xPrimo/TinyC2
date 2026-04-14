@@ -2,6 +2,7 @@ package cli
 
 import (
 	"strings"
+
 	"github.com/0xPrimo/TinyC2/server/internal/cli/handlers"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 )
@@ -22,6 +23,8 @@ func (c *Cli) Executor(in string) {
 			handlers.HandleImplantChannel(c.Engine, &c.SessionID, cmdargs)
 		case "whoami":
 			handlers.HandleImplantWhoami(c.Engine, &c.SessionID, cmdargs)
+		case "ps":
+			handlers.HandleImplantPs(c.Engine, &c.SessionID, cmdargs)
 		case "back":
 			c.SessionID = 0
 		case "help":
@@ -32,6 +35,7 @@ func (c *Cli) Executor(in string) {
          switch   [name]                            - Switch channel
          list                                       - List channels
 
+	  ps											- List process
       whoami                                        - Get implant context
       back                                          - Exit interactive mode
       help                                          - Print help menu

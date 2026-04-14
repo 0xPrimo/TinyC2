@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 
 	"github.com/pterm/pterm"
@@ -76,14 +77,52 @@ func (e *Engine) ImplantHandleResponse(id uint32, tasks map[string]any) ([]byte,
 	return e.ImplantTaskQueue(id), nil
 }
 
+/*
+ */
+type ProcessInfo struct {
+	Name    string `json:"name"`
+	Account string `json:"account"`
+	Pid     uint32 `json:"pid"`
+	PPid    uint32 `json:"ppid"`
+}
+
 func (e *Engine) ImplantTaskHandler(id uint32, task map[string]any) error {
 	implant, _ := e.Implants[id]
 	implant.Seen = time.Now()
 	e.Implants[id] = implant
 
-	// handle implant task response
-	if task["output"] != nil {
-		logger.Success("received output:\n%s\n", task["output"])
+	switch task["name"] {
+	case "ps":
+		var pslist []ProcessInfo
+		err := json.Unmarshal([]byte(task["artifact"].(string)), &pslist)
+		if err != nil {
+			logger.Error("Error occurred during unmarshaling: %v", err)
+			return nil
+		}
+
+		table := pterm.TableData{
+			{"PPID", "PID", "Account", "Name"},
+		}
+
+		for _, ps := range pslist {
+			table = append(table, []string{
+				pterm.Cyan(fmt.Sprintf("%d", ps.PPid)),
+				pterm.Cyan(fmt.Sprintf("%d", ps.Pid)),
+				pterm.Cyan(ps.Account),
+				pterm.Cyan(ps.Name),
+			})
+		}
+
+		pterm.Println()
+		pterm.DefaultTable.
+			WithHasHeader().
+			WithBoxed().
+			WithHeaderStyle(pterm.NewStyle(pterm.FgLightMagenta, pterm.Bold)).
+			WithData(table).
+			Render()
+		pterm.Println()
+
+		return nil
 	}
 
 	return nil
@@ -323,6 +362,17 @@ func (e *Engine) ImplantWhoami(id uint32) error {
 	// execute whoami command
 	e.ImplantTaskExecute(id, map[string]any{
 		"name":     "whoami",
+		"args":     nil,
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+// ImplantPs
+func (e *Engine) ImplantPs(id uint32) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "ps",
 		"args":     nil,
 		"artifact": nil,
 	})
