@@ -45,7 +45,13 @@ func (c *Cli) completeInteractive(args []string, currword string) []prompt.Sugge
 	if currword != "" && len(args) <= 1 {
 		return prompt.FilterHasPrefix([]prompt.Suggest{
 			{Text: "channel", Description: "Manage implant channels"},
-			{Text: "whoami", Description: "Get implant context"},
+			{Text: "ps", Description: "List process"},
+			{Text: "cd", Description: "Change directory"},
+			{Text: "cp", Description: "Copy file"},
+			{Text: "shell", Description: "Run shell command via cmd.exe"},
+			{Text: "download", Description: "Download file"},
+			{Text: "upload", Description: "Upload file"},
+			{Text: "run", Description: "Run executable"},
 			{Text: "help", Description: "Help menu"},
 			{Text: "back", Description: "Exit interactive mode"},
 		}, currword, true)

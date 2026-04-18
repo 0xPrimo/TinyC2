@@ -34,6 +34,7 @@ static BOOL ImplantTaskExecute(std::vector<json>& queue, json& result) {
 	// dispatch the task to the correct handler
 	for (const auto& command : g_CommandRegistry) {
 		if (command.Name == name) {
+			result["name"] = command.Name;
 			command.Invoke(args, artifact, result);
 			return TRUE;
 		}

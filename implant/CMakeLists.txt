@@ -17,9 +17,14 @@ add_executable(Implant
     src/Channel/Channel.cpp
     src/Command/Command.cpp
     src/Command/CommandChannel.cpp
-    src/Command/CommandWhoami.cpp
     src/Command/CommandExit.cpp
     src/Command/CommandPs.cpp
+    src/Command/CommandCd.cpp
+    src/Command/CommandCp.cpp
+    src/Command/CommandShell.cpp
+    src/Command/CommandDownload.cpp
+    src/Command/CommandUpload.cpp
+    src/Command/CommandRun.cpp
 )
 
 target_link_options(Implant PRIVATE 

