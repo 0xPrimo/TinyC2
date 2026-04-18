@@ -1,6 +1,9 @@
 # TinyC2
 TinyC2 is a small C2 Framework developed with the goal of reimplementing Havoc Pro Runtime Channel Switching and Cobalt Strike UDC2 features.
 
+# Disclaimer
+> This repository is intended for authorized, educational, or ethical security research purposes only. The tools and techniques within are not to be used against systems without explicit permission. The author assumes no liability for any unauthorized or illegal misuse of this project.
+
 # Install
 
 1. Install dependencies
