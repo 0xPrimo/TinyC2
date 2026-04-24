@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/0xPrimo/TinyC2/server/internal/core"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
@@ -88,10 +89,6 @@ func HandleImplantChannel(engine *core.Engine, session *uint32, args []string) {
 	}
 }
 
-func HandleImplantWhoami(engine *core.Engine, session *uint32, args []string) {
-	engine.ImplantWhoami(*session)
-}
-
 func HandleImplantPs(engine *core.Engine, session *uint32, args []string) {
 	engine.ImplantPs(*session)
 }
@@ -152,10 +149,16 @@ func HandleImplantRun(engine *core.Engine, session *uint32, args []string) {
 		return
 	}
 
-	commandline := args[0]
-	for _, arg := range args[1:] {
-		commandline += " " + arg
+	engine.ImplantRun(*session, strings.Join(args, " "))
+}
+
+func HandleImplantExecuteAssembly(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 1 {
+		logger.Info("execute-assembly [/path/to/rubeus.exe] [klist]")
+		return
 	}
 
-	engine.ImplantRun(*session, commandline)
+	dotnet := args[0]
+	cmdargs := strings.Join(args[1:], " ")
+	engine.ImplantExecuteAssembly(*session, dotnet, cmdargs)
 }

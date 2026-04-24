@@ -25,6 +25,7 @@ add_executable(Implant
     src/Command/CommandDownload.cpp
     src/Command/CommandUpload.cpp
     src/Command/CommandRun.cpp
+    src/Command/CommandExecuteAssembly.cpp
 )
 
 target_link_options(Implant PRIVATE 

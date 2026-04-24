@@ -13,6 +13,7 @@ BOOL CommandShell(json& args, string artifact, json& result);
 BOOL CommandDownload(json& args, string artifact, json& result);
 BOOL CommandUpload(json& args, string artifact, json& result);
 BOOL CommandRun(json& args, string artifact, json& result);
+BOOL CommandExecuteAssembly(json& args, string artifact, json& result);
 
 std::vector<ImplantCommand> g_CommandRegistry = {
   {"exit",                 CommandExit            },
@@ -26,4 +27,5 @@ std::vector<ImplantCommand> g_CommandRegistry = {
   {"upload",               CommandUpload          },
   {"shell",                CommandShell           },
   {"run",                  CommandRun             },
+  {"execute-assembly",     CommandExecuteAssembly }
 };

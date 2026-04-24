@@ -21,8 +21,6 @@ func (c *Cli) Executor(in string) {
 		switch command {
 		case "channel":
 			handlers.HandleImplantChannel(c.Engine, &c.SessionID, cmdargs)
-		case "whoami":
-			handlers.HandleImplantWhoami(c.Engine, &c.SessionID, cmdargs)
 		case "ps":
 			handlers.HandleImplantPs(c.Engine, &c.SessionID, cmdargs)
 		case "cd":
@@ -37,6 +35,8 @@ func (c *Cli) Executor(in string) {
 			handlers.HandleImplantUpload(c.Engine, &c.SessionID, cmdargs)
 		case "run":
 			handlers.HandleImplantRun(c.Engine, &c.SessionID, cmdargs)
+		case "execute-assembly":
+			handlers.HandleImplantExecuteAssembly(c.Engine, &c.SessionID, cmdargs)
 		case "back":
 			c.SessionID = 0
 		case "help":

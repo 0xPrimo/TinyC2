@@ -2,6 +2,7 @@ package core
 
 import (
 	"os"
+
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 
 	"gopkg.in/yaml.v3"
@@ -17,12 +18,18 @@ type Engine struct {
 }
 
 type EngineConfig struct {
-	Plugins []PluginConfig
+	Plugins       []PluginConfig      `yaml:"plugins"`
+	CrystalPalace CrystalPalaceConfig `yaml:"crystal-palace"`
+}
+
+type CrystalPalaceConfig struct {
+	Lib      string `yaml:"lib"`
+	Pavilion string `yaml:"pavilion"`
 }
 
 type PluginConfig struct {
-	Name string
-	Path string
+	Name string `yaml:"name"`
+	Path string `yaml:"path"`
 }
 
 func NewEngine(path string) *Engine {
@@ -41,6 +48,8 @@ func NewEngine(path string) *Engine {
 		logger.Error("error unmarshaling YAML: %v", err)
 		os.Exit(1)
 	}
+
+	logger.Info("config: %v", config)
 
 	engine := &Engine{
 		Plugins:   make(map[string]Plugin),

