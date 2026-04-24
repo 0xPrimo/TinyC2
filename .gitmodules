@@ -1,3 +1,6 @@
 [submodule "implant/external/json"]
 	path = implant/external/json
 	url = https://github.com/nlohmann/json.git
+[submodule "pavilion/execute-assembly-pico"]
+	path = pavilion/execute-assembly-pico
+	url = https://github.com/ofasgard/execute-assembly-pico
