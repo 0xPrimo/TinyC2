@@ -27,11 +27,20 @@ inline ULONG RandomUint32() {
 	return RtlRandomEx(&seed);
 }
 
+typedef struct {
+	LIST_ENTRY	ListEntry;
+	DWORD 		ID;
+	HANDLE 		hProcess;
+	HANDLE 		hAnonPipe;
+	DWORD 		Status;
+} JOB, *PJOB;
+
 // IImplant interface
 //
 typedef struct {
 	// implant id
-	DWORD SessionID;
+	DWORD 		SessionID;
+	LIST_ENTRY	JobList;
 } IImplant;
 
 

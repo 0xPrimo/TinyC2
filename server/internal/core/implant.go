@@ -96,6 +96,10 @@ type FileInfo struct {
 	Data string `json:"data"`
 }
 
+type JobInfo struct {
+	ID uint32 `json:"id"`
+}
+
 func (e *Engine) ImplantTaskHandler(id uint32, task map[string]any) error {
 	implant, _ := e.Implants[id]
 	implant.Seen = time.Now()
@@ -167,6 +171,34 @@ func (e *Engine) ImplantTaskHandler(id uint32, task map[string]any) error {
 				pterm.Cyan(fmt.Sprintf("%d", ps.Pid)),
 				pterm.Cyan(ps.Account),
 				pterm.Cyan(ps.Name),
+			})
+		}
+
+		pterm.Println()
+		pterm.DefaultTable.
+			WithHasHeader().
+			WithBoxed().
+			WithHeaderStyle(pterm.NewStyle(pterm.FgLightMagenta, pterm.Bold)).
+			WithData(table).
+			Render()
+		pterm.Println()
+
+		return nil
+	case "job.list":
+		var joblist []JobInfo
+		err := json.Unmarshal([]byte(task["artifact"].(string)), &joblist)
+		if err != nil {
+			logger.Error("Error occurred during unmarshaling: %v", err)
+			return nil
+		}
+
+		table := pterm.TableData{
+			{"ID"},
+		}
+
+		for _, job := range joblist {
+			table = append(table, []string{
+				pterm.Cyan(fmt.Sprintf("%X", job.ID)),
 			})
 		}
 
@@ -409,6 +441,30 @@ func (e *Engine) ImplantChannelRemove(id uint32, name string) error {
 	e.ImplantTaskExecute(id, map[string]any{
 		"name":     "channel.remove",
 		"args":     []uint32{channel},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantJobStop(id uint32, jobid uint32) error {
+
+	// execute job.stop command
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "job.stop",
+		"args":     []uint32{jobid},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantJobList(id uint32) error {
+
+	// execute job.stop command
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "job.list",
+		"args":     nil,
 		"artifact": nil,
 	})
 

@@ -89,6 +89,32 @@ func HandleImplantChannel(engine *core.Engine, session *uint32, args []string) {
 	}
 }
 
+func HandleImplantJob(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 1 {
+		logger.Info("channel [list|stop]")
+		return
+	}
+
+	subcmd := args[0]
+	switch subcmd {
+	case "stop":
+		if len(args) < 2 {
+			logger.Info("channel switch [name]")
+			return
+		}
+
+		id, err := strconv.ParseUint(args[1], 16, 32)
+		if err != nil {
+			logger.Error("failed to parse id: %v", err)
+			return
+		}
+
+		engine.ImplantJobStop(*session, uint32(id))
+	case "list":
+		engine.ImplantJobList(*session)
+	}
+}
+
 func HandleImplantPs(engine *core.Engine, session *uint32, args []string) {
 	engine.ImplantPs(*session)
 }

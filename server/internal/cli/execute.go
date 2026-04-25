@@ -37,6 +37,8 @@ func (c *Cli) Executor(in string) {
 			handlers.HandleImplantRun(c.Engine, &c.SessionID, cmdargs)
 		case "execute-assembly":
 			handlers.HandleImplantExecuteAssembly(c.Engine, &c.SessionID, cmdargs)
+		case "job":
+			handlers.HandleImplantJob(c.Engine, &c.SessionID, cmdargs)
 		case "back":
 			c.SessionID = 0
 		case "help":
@@ -48,6 +50,10 @@ func (c *Cli) Executor(in string) {
        remove   [name]                            - Remove channel
        list                                       - List channels
                 -----------------------------
+    job
+       stop   [id]                                - Stop job
+       list                                       - List jobs
+                -----------------------------
     ps                                            - List process
     cd                                            - Change process working directory
     cp                                            - Copy file to target directory
@@ -55,6 +61,7 @@ func (c *Cli) Executor(in string) {
     download                                      - Download file from target machine
     upload                                        - Upload file to target machine
     run                                           - Run executable that exits on target machine
+    execute-assembly                              - Run a .NET application
     back                                          - Exit interactive mode
     help                                          - Print help menu
 `)

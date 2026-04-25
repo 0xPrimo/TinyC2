@@ -53,6 +53,7 @@ func (c *Cli) completeInteractive(args []string, currword string) []prompt.Sugge
 			{Text: "upload", Description: "Upload file"},
 			{Text: "run", Description: "Run executable"},
 			{Text: "execute-assembly", Description: "Execute .NET application"},
+			{Text: "job", Description: "Manage implant jobs"},
 			{Text: "help", Description: "Help menu"},
 			{Text: "back", Description: "Exit interactive mode"},
 		}, currword, true)
@@ -64,6 +65,13 @@ func (c *Cli) completeInteractive(args []string, currword string) []prompt.Sugge
 	switch cmd {
 	case "channel":
 		return c.completeInteractiveChannel(cmdargs, currword)
+	case "job":
+		if len(args) == 1 {
+			return prompt.FilterHasPrefix([]prompt.Suggest{
+				{Text: "stop"},
+				{Text: "list"},
+			}, currword, true)
+		}
 	}
 
 	return []prompt.Suggest{}

