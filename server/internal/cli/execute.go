@@ -13,6 +13,8 @@ func (c *Cli) Executor(in string) {
 		return
 	}
 
+	// Implant interaction commands
+	//
 	args := strings.Split(in, " ")
 	command := args[0]
 	cmdargs := args[1:]
@@ -39,34 +41,37 @@ func (c *Cli) Executor(in string) {
 			handlers.HandleImplantExecuteAssembly(c.Engine, &c.SessionID, cmdargs)
 		case "job":
 			handlers.HandleImplantJob(c.Engine, &c.SessionID, cmdargs)
+		case "inline-execute":
+			handlers.HandleImplantInlineExecute(c.Engine, &c.SessionID, cmdargs)
 		case "back":
 			c.SessionID = 0
 		case "help":
 			logger.Info(
 				`Usage:
-    channel                                       - Manage channels
-       register [name]                            - Register channel
-       switch   [name]                            - Switch channel
-       remove   [name]                            - Remove channel
-       list                                       - List channels
-                -----------------------------
-    job
-       stop   [id]                                - Stop job
-       list                                       - List jobs
-                -----------------------------
-    ps                                            - List process
-    cd                                            - Change process working directory
-    cp                                            - Copy file to target directory
-    shell                                         - Run a shell command via cmd.exe
-    download                                      - Download file from target machine
-    upload                                        - Upload file to target machine
-    run                                           - Run executable that exits on target machine
-    execute-assembly                              - Run a .NET application
-    back                                          - Exit interactive mode
-    help                                          - Print help menu
-`)
+	    channel                                       - Manage channels
+	       register [name]                            - Register channel
+	       switch   [name]                            - Switch channel
+	       remove   [name]                            - Remove channel
+	       list                                       - List channels
+	                -----------------------------
+	    job
+	       stop   [id]                                - Stop job
+	       list                                       - List jobs
+	                -----------------------------
+	    ps                                            - List process
+	    cd                                            - Change process working directory
+	    cp                                            - Copy file to target directory
+	    shell                                         - Run a shell command via cmd.exe
+	    download                                      - Download file from target machine
+	    upload                                        - Upload file to target machine
+	    run                                           - Run executable that exits on target machine
+	    execute-assembly                              - Run a .NET application
+	    inline-execute                                - Run a Beacon Object File
+	    back                                          - Exit interactive mode
+	    help                                          - Print help menu
+	`)
 		case "exit":
-			handlers.HandleExit(c.Engine, cmdargs)
+			handlers.HandleExit(c.Engine, &c.SessionID, cmdargs)
 		default:
 			logger.Error("unknown command: %s\n", command)
 		}

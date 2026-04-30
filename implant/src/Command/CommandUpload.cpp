@@ -1,6 +1,6 @@
 #include "Command.h"
 
-BYTE* Base64Decode(const char* input, DWORD* outLen);
+#include "Stdlib.h"
 
 BOOL CommandUpload(json& args, string artifact, json& result) {
     DWORD   size    = 0;

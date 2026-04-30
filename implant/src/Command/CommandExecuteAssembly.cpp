@@ -1,8 +1,7 @@
 #include "Command.h"
 
 #include "Implant.h"
-
-BYTE* Base64Decode(const char* input, DWORD* outLen);
+#include "Stdlib.h"
 
 BOOL CommandExecuteAssembly(json& args, string artifact, json& result) {
     HANDLE              hPipeRead;

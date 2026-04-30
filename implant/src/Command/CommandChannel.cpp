@@ -1,33 +1,7 @@
 #include "Command.h"
 
 #include "Channel.h"
-#include <wincrypt.h>
-
-#pragma comment(lib, "crypt32.lib")
-
-// Decodes a Base64 string into a heap-allocated buffer
-BYTE* Base64Decode(const char* input, DWORD* outLen) {
-	DWORD dwDecodedLen = 0;
-
-	// 1. Calculate required buffer size
-	if (!CryptStringToBinaryA(input, 0, CRYPT_STRING_BASE64, NULL, &dwDecodedLen, NULL, NULL)) {
-		return NULL;
-	}
-
-	// 2. Allocate memory using the Windows Heap (matching your Rtl pattern)
-	BYTE* decodedData = (BYTE*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwDecodedLen);
-	if (!decodedData) return NULL;
-
-	// 3. Perform actual decoding
-	if (!CryptStringToBinaryA(input, 0, CRYPT_STRING_BASE64, decodedData, &dwDecodedLen, NULL, NULL)) {
-		HeapFree(GetProcessHeap(), 0, decodedData);
-		return NULL;
-	}
-
-	*outLen = dwDecodedLen;
-	return decodedData;
-}
-
+#include "Stdlib.h"
 
 // CommandChannelRegister register a user defined channel
 //

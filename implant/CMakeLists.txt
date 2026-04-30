@@ -15,6 +15,9 @@ add_executable(Implant
     src/Main.cpp
     src/Implant.cpp
     src/Channel/Channel.cpp
+    
+    # commands
+    #
     src/Command/Command.cpp
     src/Command/CommandChannel.cpp
     src/Command/CommandExit.cpp
@@ -27,6 +30,17 @@ add_executable(Implant
     src/Command/CommandRun.cpp
     src/Command/CommandExecuteAssembly.cpp
     src/Command/CommandJob.cpp
+    src/Command/CommandInlineExecute.cpp
+
+    # coff loader
+    #
+    src/Coff/BofApis.cpp
+    src/Coff/CoffLoader.cpp
+    src/Coff/CoffRelocations.cpp
+    
+    # stdlib
+    #
+    src/Stdlib/Base64.cpp
 )
 
 target_link_options(Implant PRIVATE 

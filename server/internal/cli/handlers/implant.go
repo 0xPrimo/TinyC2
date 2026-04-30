@@ -188,3 +188,22 @@ func HandleImplantExecuteAssembly(engine *core.Engine, session *uint32, args []s
 	cmdargs := strings.Join(args[1:], " ")
 	engine.ImplantExecuteAssembly(*session, dotnet, cmdargs)
 }
+
+func HandleImplantInlineExecute(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 3 {
+		logger.Info(
+			`
+[*] Usage:
+       inline-execute [/path/to/bof.o] [pack order] [args]\n
+
+[*] Example:
+       inline-execute ./dir.x64.o zs C:\ 0        
+`)
+		return
+	}
+
+	bof := args[0]
+	pack := args[1]
+	bofargs := args[2:]
+	engine.ImplantInlineExecute(*session, bof, pack, bofargs)
+}

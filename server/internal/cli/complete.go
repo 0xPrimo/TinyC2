@@ -53,6 +53,7 @@ func (c *Cli) completeInteractive(args []string, currword string) []prompt.Sugge
 			{Text: "upload", Description: "Upload file"},
 			{Text: "run", Description: "Run executable"},
 			{Text: "execute-assembly", Description: "Execute .NET application"},
+			{Text: "inline-execute", Description: "Execute a Beacon Object File"},
 			{Text: "job", Description: "Manage implant jobs"},
 			{Text: "help", Description: "Help menu"},
 			{Text: "back", Description: "Exit interactive mode"},
