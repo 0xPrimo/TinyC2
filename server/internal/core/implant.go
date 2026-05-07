@@ -221,7 +221,7 @@ func (e *Engine) ImplantTaskHandler(id uint32, task map[string]any) error {
 func (e *Engine) ImplantTaskExecute(id uint32, task map[string]any) {
 	implant, exists := e.Implants[id]
 	if !exists {
-		logger.Error("implant %X does not exists", pterm.Cyan(id))
+		logger.Error("implant %s does not exists", pterm.Cyan(id))
 		return
 	}
 
@@ -586,7 +586,23 @@ func (e *Engine) ImplantExecuteAssembly(id uint32, dotnet string, cmdargs string
 	return nil
 }
 
-func (e *Engine) ImplantInlineExecute(id uint32, bof string, packorder string, args []string) {
+func (e *Engine) ImplantInlineExecute(id uint32, bof string, bofargs []byte) {
+	// read bof
+	bofraw, err := os.ReadFile(bof)
+	if err != nil {
+		logger.Error("failed to read beacon object file: %v", err)
+		return
+	}
+
+	// execute task
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "inline-execute",
+		"args":     []string{base64.StdEncoding.EncodeToString(bofargs)},
+		"artifact": base64.StdEncoding.EncodeToString(bofraw),
+	})
+}
+
+func (e *Engine) ImplantInlineExecuteEx(id uint32, bof string, packorder string, args []string) {
 	// read bof
 	bofraw, err := os.ReadFile(bof)
 	if err != nil {

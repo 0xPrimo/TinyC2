@@ -205,5 +205,5 @@ func HandleImplantInlineExecute(engine *core.Engine, session *uint32, args []str
 	bof := args[0]
 	pack := args[1]
 	bofargs := args[2:]
-	engine.ImplantInlineExecute(*session, bof, pack, bofargs)
+	engine.ImplantInlineExecuteEx(*session, bof, pack, bofargs)
 }

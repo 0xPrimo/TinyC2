@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/0xPrimo/TinyC2/server/internal/cli/handlers"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
+	lua "github.com/yuin/gopher-lua"
 )
 
 func (c *Cli) Executor(in string) {
@@ -73,7 +75,26 @@ func (c *Cli) Executor(in string) {
 		case "exit":
 			handlers.HandleExit(c.Engine, cmdargs)
 		default:
-			logger.Error("unknown command: %s\n", command)
+
+			for _, cmds := range c.UserCommands {
+				for _, cmd := range cmds {
+					if cmd.Name == command {
+						c.L.Push(cmd.Callback)
+						c.L.Push(lua.LNumber(c.SessionID))
+						for _, arg := range cmdargs {
+							c.L.Push(lua.LString(arg))
+						}
+
+						if err := c.L.PCall(len(cmdargs)+1, 0, nil); err != nil {
+							fmt.Printf("Failed to run script: %v\n", err)
+						}
+						return
+					}
+				}
+			}
+
+			fmt.Printf("Unknown command: %s\n", command)
+			return
 		}
 		return
 	}
@@ -85,6 +106,19 @@ func (c *Cli) Executor(in string) {
 		handlers.HandleListener(c.Engine, cmdargs)
 	case "implant":
 		handlers.HandleImplant(c.Engine, &c.SessionID, cmdargs)
+	case "script_load":
+		if len(cmdargs) < 1 {
+			logger.Error("need arguments")
+			return
+		}
+		c.HandleScriptLoad(cmdargs[0])
+	case "script_unload":
+		if len(cmdargs) < 1 {
+			logger.Error("need arguments")
+			return
+		}
+		c.HandleScriptUnload(cmdargs[0])
+
 	case "help":
 		logger.Info(
 			`Usage:
@@ -103,12 +137,29 @@ func (c *Cli) Executor(in string) {
 	     start    [plugin] [name] [config.yaml]     - Start listener
          stop     [name]                            - Stop listener
          list                                       - List listeners
-
+		
+	  script_load   [path]                          - Load lua script
+	  script_unload [path]                          - Unload lua script
       help                                          - Print help menu
 `)
 	case "exit":
 		handlers.HandleExit(c.Engine, cmdargs)
 	default:
-		logger.Error("unknown command: %s\n", command)
+		fmt.Printf("Unknown command: %s\n", command)
+		return
 	}
+}
+
+func (c *Cli) HandleScriptLoad(path string) {
+	if err := c.L.DoFile(string(path)); err != nil {
+		logger.Error("failed to run script: %v", err)
+	}
+
+	logger.Info("Script loaded")
+}
+
+func (c *Cli) HandleScriptUnload(path string) {
+	delete(c.UserCommands, path)
+
+	logger.Info("Script unloaded")
 }
