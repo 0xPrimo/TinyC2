@@ -41,6 +41,7 @@ add_executable(Implant
     # stdlib
     #
     src/Stdlib/Base64.cpp
+    src/Stdlib/Fs.cpp
 )
 
 target_link_options(Implant PRIVATE 

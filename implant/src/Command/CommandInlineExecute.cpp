@@ -21,15 +21,9 @@ BOOL CommandInlineExecute(json& args, string artifact, json& result) {
         return FALSE;
     }
 
-    if (!COFFLoader(TRUE, Bof, BofSize, BofArgs, BofArgsSize)) {
+    if (!COFFLoader(FALSE, Bof, BofSize, BofArgs, BofArgsSize)) {
         return FALSE;
     }
-    
-    INT     OutputSize      = 0;
-    PCHAR   Output          = BeaconGetOutputData(&OutputSize);
-    Output[OutputSize]      = '\0';
-    result["output"] = Output;
 
-    free(Output);
     return TRUE;
 }

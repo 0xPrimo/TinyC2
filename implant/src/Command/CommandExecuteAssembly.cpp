@@ -102,6 +102,7 @@ BOOL CommandExecuteAssembly(json& args, string artifact, json& result) {
     Job->hAnonPipe  = hPipeRead;
     Job->hProcess   = pi.hProcess;
     Job->Status     = TRUE;
+    Job->Type       = JOB_TYPE_PROCESS;
 
     InsertTailList(&g_Implant.JobList, &Job->ListEntry);
 

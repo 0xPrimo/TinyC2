@@ -75,14 +75,6 @@ typedef struct {
 } COFF_SECTION_DATA, *PCOFF_SECTION_DATA;
 
 typedef struct {
-    DWORD (*Entrypoint)(PVOID, DWORD);
-    PVOID ArgsData;
-    DWORD ArgsSize;
-} COFF_ENTRYPOINT_DATA, *PCOFF_ENTRYPOINT_DATA;
-
-typedef DWORD(*COFF_START_ROUTINE)(COFF_ENTRYPOINT_DATA);
-
-typedef struct {
     PBYTE                   FileBuffer;
     DWORD                   FileSize;
 
@@ -95,6 +87,17 @@ typedef struct {
     DWORD_PTR*              GlobalOffsetTable;
     DWORD                   GlobalOffsetTableIndex;
 } COFF_CONTEXT, *PCOFF_CONTEXT;
+
+typedef DWORD(*COFF_ENTRYPOINT)(PVOID, DWORD);
+
+typedef struct {
+    PCOFF_CONTEXT   Context;
+    COFF_ENTRYPOINT Entrypoint;
+    PVOID           ArgsData;
+    DWORD           ArgsSize;
+} COFF_ENTRYPOINT_DATA, *PCOFF_ENTRYPOINT_DATA;
+
+typedef DWORD(*COFF_START_ROUTINE)(COFF_ENTRYPOINT_DATA);
 
 typedef struct {
     DWORD   Type;
@@ -114,6 +117,10 @@ BOOL COFFLoader(
     DWORD           FileSize,
     PVOID           ArgsData,
     DWORD           ArgsSize
+);
+
+BOOL COFFCleanup(
+    PCOFF_CONTEXT* Ctx
 );
 
 // Beacon comptability

@@ -12,6 +12,9 @@
 using json = nlohmann::json;
 using string = std::string;
 
+#define JOB_TYPE_THREAD 	0x00000000
+#define JOB_TYPE_PROCESS 	0x00000001
+
 extern "C" {
 	_Ret_range_(<= , MAXLONG)
 		NTSYSAPI
@@ -31,7 +34,9 @@ typedef struct {
 	LIST_ENTRY	ListEntry;
 	DWORD 		ID;
 	HANDLE 		hProcess;
+	HANDLE		hThread;
 	HANDLE 		hAnonPipe;
+	DWORD 		Type;
 	DWORD 		Status;
 } JOB, *PJOB;
 

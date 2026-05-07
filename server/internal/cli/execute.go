@@ -71,7 +71,7 @@ func (c *Cli) Executor(in string) {
 	    help                                          - Print help menu
 	`)
 		case "exit":
-			handlers.HandleExit(c.Engine, &c.SessionID, cmdargs)
+			handlers.HandleExit(c.Engine, cmdargs)
 		default:
 			logger.Error("unknown command: %s\n", command)
 		}

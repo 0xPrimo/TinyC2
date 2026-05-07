@@ -2,8 +2,6 @@
 
 #include "Stdlib.h"
 
-BOOL ReadFileFromDisk(CONST CHAR *path, LPVOID *buffer, DWORD *buffsize);
-
 BOOL CommandDownload(json& args, string artifact, json& result) {
     LPVOID  data        = NULL;
     DWORD   size        = 0; 
@@ -11,7 +9,7 @@ BOOL CommandDownload(json& args, string artifact, json& result) {
     string  path        = args[0].get<string>();
     json    file        = json::object();
 
-    if (!ReadFileFromDisk(path.c_str(), &data, &size)) {
+    if (!FsFileRead(path.c_str(), &data, &size)) {
         result["output"] = "[-] file not found";
         return FALSE;
     }
