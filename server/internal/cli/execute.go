@@ -45,6 +45,8 @@ func (c *Cli) Executor(in string) {
 			handlers.HandleImplantJob(c.Engine, &c.SessionID, cmdargs)
 		case "inline-execute":
 			handlers.HandleImplantInlineExecute(c.Engine, &c.SessionID, cmdargs)
+		case "inject-shellcode":
+			handlers.HandleImplantInjectShellcode(c.Engine, &c.SessionID, cmdargs)
 		case "back":
 			c.SessionID = 0
 		case "help":
@@ -69,9 +71,11 @@ func (c *Cli) Executor(in string) {
 	    run                                           - Run executable that exits on target machine
 	    execute-assembly                              - Run a .NET application
 	    inline-execute                                - Run a Beacon Object File
+        shellcode-inject                              - Inject shellcode into running process
 	    back                                          - Exit interactive mode
 	    help                                          - Print help menu
-	`)
+	`,
+			)
 		case "exit":
 			handlers.HandleExit(c.Engine, cmdargs)
 		default:
@@ -141,7 +145,8 @@ func (c *Cli) Executor(in string) {
 	  script_load   [path]                          - Load lua script
 	  script_unload [path]                          - Unload lua script
       help                                          - Print help menu
-`)
+`,
+		)
 	case "exit":
 		handlers.HandleExit(c.Engine, cmdargs)
 	default:

@@ -198,7 +198,8 @@ func HandleImplantInlineExecute(engine *core.Engine, session *uint32, args []str
 
 [*] Example:
        inline-execute ./dir.x64.o zs C:\ 0        
-`)
+`,
+		)
 		return
 	}
 
@@ -206,4 +207,20 @@ func HandleImplantInlineExecute(engine *core.Engine, session *uint32, args []str
 	pack := args[1]
 	bofargs := args[2:]
 	engine.ImplantInlineExecuteEx(*session, bof, pack, bofargs)
+}
+
+func HandleImplantInjectShellcode(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 2 {
+		logger.Info("shellcode-inject [pid] [shellcode-file]")
+		return
+	}
+
+	shellcode := args[1]
+	pid, err := strconv.ParseInt(args[0], 10, 32)
+	if err != nil {
+		logger.Error("failed to parse pid: %v", err)
+		return
+	}
+
+	engine.ImplantInjectShellcode(*session, int(pid), shellcode)
 }

