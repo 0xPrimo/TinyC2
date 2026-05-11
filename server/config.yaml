@@ -5,3 +5,7 @@ plugins:
 
   - name: "tcp"
     path: "plugins/tcp/bin/tcp.plugin.so"
+
+crystal-palace:
+  lib: "/path/to/crystalpalace.jar"
+  pavilion: "./pavilion"

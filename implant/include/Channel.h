@@ -1,6 +1,6 @@
 #pragma once
 
-#include "phnt.h"
+#include "Ntdll.h"
 
 // IChannel channel interface
 //

