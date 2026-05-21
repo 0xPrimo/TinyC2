@@ -13,7 +13,16 @@ include_directories(
 
 add_executable(Implant
     src/Main.cpp
-    src/Implant.cpp
+
+    # implant
+    #
+    src/Implant/Implant.cpp
+    src/Implant/ImplantExecute.cpp
+    src/Implant/ImplantJob.cpp
+    src/Implant/ImplantTransport.cpp
+
+    # channel
+    #
     src/Channel/Channel.cpp
 
     # commands

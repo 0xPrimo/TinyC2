@@ -3,9 +3,9 @@
 // Main
 //
 int main() {
-	ImplantInitialize();
-	ImplantRegister();
-	ImplantLoop();
+    ImplantInitialize();
+    ImplantRegister();
+    ImplantLoop();
 
-	return (0);
+    return ( 0 );
 }

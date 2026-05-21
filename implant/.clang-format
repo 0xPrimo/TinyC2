@@ -1,0 +1,41 @@
+# We base this on the LLVM style, but override specific settings below
+BasedOnStyle: LLVM
+
+# Language standards
+Language: Cpp
+Standard: c++17
+
+# Indentation (Set to 4 spaces as requested)
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# Line length
+ColumnLimit: 100
+
+# pointer alignment
+PointerAlignment: Left
+
+# Parentheses
+SpacesInParens: Custom
+SpacesInParensOptions:
+  Other: true
+  InEmptyParentheses: false
+
+# Aligns the variable names
+AlignConsecutiveDeclarations: true
+
+# Aligns the equals signs
+AlignConsecutiveAssignments: true
+
+# Ensures the { is on the same line as the variable name
+BreakBeforeBraces: Attach
+
+# Forces a break after the { if the list is long
+AlignAfterOpenBracket: AlwaysBreak
+
+# Puts each struct member on its own line if it wraps
+BinPackArguments: false
+
+# Standard C++11/14/17/20 braced list spacing (e.g., {1, 2, 3})
+Cpp11BracedListStyle: true

