@@ -1,3 +1,4 @@
+// Package core
 package core
 
 import (
@@ -7,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
@@ -24,15 +24,20 @@ type Implant struct {
 	Channels map[string]uint32
 }
 
+type TaskResult struct {
+	Name     string `json:"name"`
+	Output   string `json:"output"`
+	Artifact string `json:"artifact"`
+	Status   string `json:"status"`
+}
+
 type ImplantResponse struct {
-	ID   uint32         `json:"id"`
-	Task map[string]any `json:"task"`
+	ID    uint32       `json:"id"`
+	Tasks []TaskResult `json:"tasks"`
 }
 
 func (e *Engine) ImplantProcess(listener string, data []byte) ([]byte, error) {
-	var (
-		response ImplantResponse
-	)
+	var response ImplantResponse
 
 	err := json.Unmarshal(data, &response)
 	if err != nil {
@@ -43,7 +48,16 @@ func (e *Engine) ImplantProcess(listener string, data []byte) ([]byte, error) {
 	if !e.ImplantExists(response.ID) {
 		return e.ImplantRegister(response.ID, listener)
 	} else {
-		return e.ImplantHandleResponse(response.ID, response.Task)
+		// update implant last seen
+		implant := e.Implants[response.ID]
+		implant.Seen = time.Now()
+		e.Implants[response.ID] = implant
+
+		// task result processing
+		e.ImplantTaskResultDispatch(response.ID, response.Tasks)
+
+		// return task requests
+		return e.ImplantGetTaskRequests(response.ID), nil
 	}
 }
 
@@ -72,152 +86,6 @@ func (e *Engine) ImplantRegister(id uint32, listener string) ([]byte, error) {
 	return data, nil
 }
 
-func (e *Engine) ImplantHandleResponse(id uint32, tasks map[string]any) ([]byte, error) {
-	err := e.ImplantTaskHandler(id, tasks)
-	if err != nil {
-		logger.Error("failed to handle task: %v", err)
-		return e.ImplantTaskQueue(id), err
-	}
-
-	return e.ImplantTaskQueue(id), nil
-}
-
-/*
- */
-type ProcessInfo struct {
-	Name    string `json:"name"`
-	Account string `json:"account"`
-	Pid     uint32 `json:"pid"`
-	PPid    uint32 `json:"ppid"`
-}
-
-type FileInfo struct {
-	Name string `json:"name"`
-	Size uint32 `json:"size"`
-	Data string `json:"data"`
-}
-
-type JobInfo struct {
-	ID uint32 `json:"id"`
-}
-
-func (e *Engine) ImplantTaskHandler(id uint32, task map[string]any) error {
-	implant, _ := e.Implants[id]
-	implant.Seen = time.Now()
-	e.Implants[id] = implant
-
-	if task["output"] != nil {
-		logger.Success("received output:\n%s\n", task["output"])
-	}
-
-	// post command processing
-	switch task["name"] {
-	case "download":
-		var file FileInfo
-
-		if task["artifact"] == nil {
-			return nil
-		}
-
-		err := json.Unmarshal([]byte(task["artifact"].(string)), &file)
-		if err != nil {
-			logger.Error("Error occurred during unmarshaling: %v", err)
-			return nil
-		}
-
-		data, err := base64.StdEncoding.DecodeString(file.Data)
-		if err != nil {
-			logger.Error("Failed to decode base64: %v", err)
-			return nil
-		}
-
-		err = os.MkdirAll("uploads", 0755)
-		if err != nil {
-			logger.Error("Failed to create directory: %v", err)
-			return nil
-		}
-
-		var filename string
-		slshindex := strings.LastIndex(file.Name, `\`)
-		if slshindex == -1 {
-			filename = file.Name
-		} else {
-			filename = file.Name[slshindex+1:]
-		}
-
-		dest := filepath.Join(
-			"uploads",
-			filename,
-		)
-		err = os.WriteFile(dest, data, 0644)
-		if err != nil {
-			logger.Error("Failed to write to file: %v", err)
-			return nil
-		}
-	case "ps":
-		var pslist []ProcessInfo
-		err := json.Unmarshal([]byte(task["artifact"].(string)), &pslist)
-		if err != nil {
-			logger.Error("Error occurred during unmarshaling: %v", err)
-			return nil
-		}
-
-		table := pterm.TableData{
-			{"PPID", "PID", "Account", "Name"},
-		}
-
-		for _, ps := range pslist {
-			table = append(table, []string{
-				pterm.Cyan(fmt.Sprintf("%d", ps.PPid)),
-				pterm.Cyan(fmt.Sprintf("%d", ps.Pid)),
-				pterm.Cyan(ps.Account),
-				pterm.Cyan(ps.Name),
-			})
-		}
-
-		pterm.Println()
-		pterm.DefaultTable.
-			WithHasHeader().
-			WithBoxed().
-			WithHeaderStyle(pterm.NewStyle(pterm.FgLightMagenta, pterm.Bold)).
-			WithData(table).
-			Render()
-		pterm.Println()
-
-		return nil
-	case "job.list":
-		var joblist []JobInfo
-		err := json.Unmarshal([]byte(task["artifact"].(string)), &joblist)
-		if err != nil {
-			logger.Error("Error occurred during unmarshaling: %v", err)
-			return nil
-		}
-
-		table := pterm.TableData{
-			{"ID"},
-		}
-
-		for _, job := range joblist {
-			table = append(table, []string{
-				pterm.Cyan(fmt.Sprintf("%X", job.ID)),
-			})
-		}
-
-		pterm.Println()
-		pterm.DefaultTable.
-			WithHasHeader().
-			WithBoxed().
-			WithHeaderStyle(pterm.NewStyle(pterm.FgLightMagenta, pterm.Bold)).
-			WithData(table).
-			Render()
-		pterm.Println()
-
-		return nil
-	}
-
-	return nil
-}
-
 func (e *Engine) ImplantTaskExecute(id uint32, task map[string]any) {
 	implant, exists := e.Implants[id]
 	if !exists {
@@ -229,7 +97,7 @@ func (e *Engine) ImplantTaskExecute(id uint32, task map[string]any) {
 	e.Implants[id] = implant
 }
 
-func (e *Engine) ImplantTaskQueue(id uint32) []byte {
+func (e *Engine) ImplantGetTaskRequests(id uint32) []byte {
 	implant, exists := e.Implants[id]
 	if !exists {
 		logger.Error("implant %X does not exists", pterm.Cyan(id))
@@ -287,7 +155,6 @@ func (e *Engine) ImplantKill(id uint32) error {
 }
 
 func (e *Engine) ImplantList() error {
-
 	table := pterm.TableData{
 		{"ID", "Listener", "Status"},
 	}
@@ -449,7 +316,6 @@ func (e *Engine) ImplantChannelRemove(id uint32, name string) error {
 }
 
 func (e *Engine) ImplantJobStop(id uint32, jobid uint32) error {
-
 	// execute job.stop command
 	e.ImplantTaskExecute(id, map[string]any{
 		"name":     "job.stop",
@@ -461,7 +327,6 @@ func (e *Engine) ImplantJobStop(id uint32, jobid uint32) error {
 }
 
 func (e *Engine) ImplantJobList(id uint32) error {
-
 	// execute job.stop command
 	e.ImplantTaskExecute(id, map[string]any{
 		"name":     "job.list",
