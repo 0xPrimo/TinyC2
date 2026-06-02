@@ -7,5 +7,5 @@ import (
 )
 
 func NewListener(engine sdk.IEngine, name string, config string) (sdk.IListener, error) {
-	return listener.NewHttpListener(engine, name, config)
+	return listener.NewHTTPListener(engine, name, config)
 }

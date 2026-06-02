@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CreateHttpHandler(listener *HttpListener) func(*gin.Context) {
+func CreateHTTPHandler(listener *HTTPListener) func(*gin.Context) {
 	return func(c *gin.Context) {
 		body, err := c.GetRawData()
 		if err != nil {

@@ -63,7 +63,9 @@ target_link_options(Implant PRIVATE
 )
 
 set(DEFAULT_CHANNEL "{0x0}" CACHE STRING "default channel")
+set(DEFAULT_CHANNEL_CONFIG "{0x0}" CACHE STRING "default channel config")
 
+target_compile_definitions(Implant PRIVATE "DEFAULT_CHANNEL_CONFIG=${DEFAULT_CHANNEL_CONFIG}")
 target_compile_definitions(Implant PRIVATE "DEFAULT_CHANNEL=${DEFAULT_CHANNEL}")
 
 target_link_libraries(Implant PRIVATE

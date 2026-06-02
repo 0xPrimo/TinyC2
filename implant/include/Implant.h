@@ -49,14 +49,28 @@ typedef struct {
     DWORD Status;
 } TASK_INFO, *PTASK_INFO;
 
+#include "Coff.h"
+
 // IImplant interface
 //
+typedef struct {
+    DWORD SessionID; // Implant session id
+
+    void ( *BeaconDataParse )( datap* parser, char* buffer, int size );
+    int ( *BeaconDataInt )( datap* parser );
+    short ( *BeaconDataShort )( datap* parser );
+    int ( *BeaconDataLength )( datap* parser );
+    char* ( *BeaconDataExtract )( datap* parser, int* size );
+
+} IImplant;
+
 typedef struct {
     DWORD      SessionID;        // Implant session id
     LIST_ENTRY JobList;          // List of executing jobs
     LIST_ENTRY TaskRequestList;  // List of wating tasks
     LIST_ENTRY TaskResponseList; // List of finished tasks
-} IImplant;
+    IImplant   Interface;
+} IMPLANT, *PIMPLANT;
 
 BOOL ImplantInitialize( VOID );
 VOID ImplantRegister( VOID );
@@ -70,4 +84,4 @@ BOOL ImplantQueueTaskResult( json TaskResult );
 
 BOOL ImplantGetJobsInfo();
 
-extern IImplant g_Implant;
+extern IMPLANT g_Implant;

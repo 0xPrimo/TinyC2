@@ -1,6 +1,7 @@
 #include "Implant.h"
+#include "Coff.h"
 
-IImplant g_Implant;
+IMPLANT g_Implant;
 
 /*
  * @brief Main loop for executing and sending tasks
@@ -40,6 +41,13 @@ VOID ImplantRegister() {
  */
 BOOL ImplantInitialize() {
     g_Implant.SessionID = RandomUint32();
+
+    g_Implant.Interface.SessionID         = g_Implant.SessionID;
+    g_Implant.Interface.BeaconDataInt     = BeaconDataInt;
+    g_Implant.Interface.BeaconDataExtract = BeaconDataExtract;
+    g_Implant.Interface.BeaconDataParse   = BeaconDataParse;
+    g_Implant.Interface.BeaconDataLength  = BeaconDataLength;
+    g_Implant.Interface.BeaconDataShort   = BeaconDataShort;
 
     InitializeListHead( &g_Implant.JobList );
     InitializeListHead( &g_Implant.TaskRequestList );

