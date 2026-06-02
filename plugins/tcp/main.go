@@ -7,5 +7,5 @@ import (
 )
 
 func NewListener(engine sdk.IEngine, name string, config string) (sdk.IListener, error) {
-	return listener.NewTcpListener(engine, name, config)
+	return listener.NewTCPListener(engine, name, config)
 }

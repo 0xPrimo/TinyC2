@@ -33,9 +33,7 @@ type PluginConfig struct {
 }
 
 func NewEngine(path string) *Engine {
-	var (
-		config EngineConfig
-	)
+	var config EngineConfig
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -48,8 +46,6 @@ func NewEngine(path string) *Engine {
 		logger.Error("error unmarshaling YAML: %v", err)
 		os.Exit(1)
 	}
-
-	logger.Info("config: %v", config)
 
 	engine := &Engine{
 		Plugins:   make(map[string]Plugin),

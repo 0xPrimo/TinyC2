@@ -1,5 +1,29 @@
 bindhost: "0.0.0.0"
 bindport: 9090
 
-connhost: "10.24.84.134"
-connport: 9090
+#
+# implant transport profile
+#
+
+user-agent:          "Tinyc2/0.1"
+rotation-strategy:   "round-robin"
+method:              "POST"
+
+hosts:
+  - ip: "10.10.10.10"
+    port: 9090
+  - ip: "10.10.10.10"
+    port: 9090
+
+#
+# https://github.com/BC-SECURITY/Malleable-C2-Profiles/blob/master/Crimeware/qakbot.profile
+#
+uris:
+  - "/TealeafTarget.php"
+
+headers:
+    Connection:       "Keep-Alive"
+    Accept:           "*/*"
+    Accept-Language:  "en-us"
+    Cookie:           "47952628-ffb7-43db-b880-d727751"
+    Host:             "projects.montgomerytech.com"
