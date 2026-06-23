@@ -21,6 +21,8 @@ func (c *Cli) Completer(d prompt.Document) []prompt.Suggest {
 			{Text: "plugin", Description: "Manage plugins"},
 			{Text: "listener", Description: "Manage listeners"},
 			{Text: "implant", Description: "Manage implants"},
+			{Text: "script_load", Description: "Load lua script"},
+			{Text: "script_unload", Description: "Unload lua script"},
 			{Text: "help", Description: "Help menu"},
 			{Text: "exit", Description: "Exit"},
 		}, currword, true)
@@ -57,6 +59,10 @@ func (c *Cli) completeInteractive(args []string, currword string) []prompt.Sugge
 			{Text: "job", Description: "Manage implant jobs"},
 			{Text: "help", Description: "Help menu"},
 			{Text: "back", Description: "Exit interactive mode"},
+			{Text: "token_info", Description: "Show current process token informations"},
+			{Text: "token_rev2self", Description: "Revert token"},
+			{Text: "token_make", Description: "Impersonate a user"},
+			{Text: "token_steal", Description: "Steal a process access token"},
 		}, currword, true)
 	}
 

@@ -62,6 +62,7 @@ func (c *Cli) luaBofPack(l *lua.LState) int {
 	}
 
 	packedBytes, _ := pack.BofPack(formatStr, stringArgs)
+
 	c.L.Push(lua.LString(string(packedBytes)))
 	return 1
 }

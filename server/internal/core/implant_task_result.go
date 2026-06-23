@@ -28,6 +28,10 @@ var TaskResultHandlers = map[string]TaskResultHandler{
 	"ps":               handlePs,
 	"download":         handleDownload,
 	"job.list":         handleJobList,
+	"token.info":       handleTokenInfo,
+	"token.rev2self":   handleOutput,
+	"token.make":       handleOutput,
+	"token.steal":      handleOutput,
 }
 
 func (e *Engine) ImplantTaskResultDispatch(id uint32, tasks []TaskResult) {
@@ -166,5 +170,24 @@ func handleJobList(task TaskResult) error {
 
 func handleOutput(task TaskResult) error {
 	logger.Success("recieved output:\n%s\n", task.Output)
+	return nil
+}
+
+type TokenInfo struct {
+	AccessToken        string `json:"access_token"`
+	ImpersonationToken string `json:"impersonation_token"`
+}
+
+func handleTokenInfo(task TaskResult) error {
+	var token TokenInfo
+	err := json.Unmarshal([]byte(task.Artifact), &token)
+	if err != nil {
+		logger.Error("error occurred during unmarshaling: %v", err)
+		return fmt.Errorf("error occurred during unmarshaling: %v", err)
+	}
+
+	logger.Success("Process Token Information:")
+	logger.Info("\t - Access Token: %s", token.AccessToken)
+	logger.Info("\t - ImpersonationToken: %s", token.ImpersonationToken)
 	return nil
 }

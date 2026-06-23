@@ -65,7 +65,9 @@ typedef struct {
 } IImplant;
 
 typedef struct {
-    DWORD      SessionID;        // Implant session id
+    DWORD SessionID; // Implant session id
+
+    BOOL       IsImpersonating;
     LIST_ENTRY JobList;          // List of executing jobs
     LIST_ENTRY TaskRequestList;  // List of wating tasks
     LIST_ENTRY TaskResponseList; // List of finished tasks
