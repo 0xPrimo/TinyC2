@@ -504,3 +504,35 @@ func (e *Engine) ImplantInjectShellcode(id uint32, pid int, path string) {
 		"artifact": base64.StdEncoding.EncodeToString(payload),
 	})
 }
+
+func (e *Engine) ImplantTokenInfo(id uint32) {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "token.info",
+		"args":     nil,
+		"artifact": nil,
+	})
+}
+
+func (e *Engine) ImplantTokenRev2Self(id uint32) {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "token.rev2self",
+		"args":     nil,
+		"artifact": nil,
+	})
+}
+
+func (e *Engine) ImplantTokenMake(id uint32, domain string, username string, password string) {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "token.make",
+		"args":     []string{domain, username, password},
+		"artifact": nil,
+	})
+}
+
+func (e *Engine) ImplantTokenSteal(id uint32, pid uint32) {
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "token.steal",
+		"args":     []uint32{pid},
+		"artifact": nil,
+	})
+}

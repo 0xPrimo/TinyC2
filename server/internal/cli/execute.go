@@ -47,6 +47,14 @@ func (c *Cli) Executor(in string) {
 			handlers.HandleImplantInlineExecute(c.Engine, &c.SessionID, cmdargs)
 		case "inject-shellcode":
 			handlers.HandleImplantInjectShellcode(c.Engine, &c.SessionID, cmdargs)
+		case "token_info":
+			handlers.HandleImplantTokenInfo(c.Engine, &c.SessionID, cmdargs)
+		case "token_rev2self":
+			handlers.HandleImplantTokenRev2Self(c.Engine, &c.SessionID, cmdargs)
+		case "token_make":
+			handlers.HandleImplantTokenMake(c.Engine, &c.SessionID, cmdargs)
+		case "token_steal":
+			handlers.HandleImplantTokenSteal(c.Engine, &c.SessionID, cmdargs)
 		case "back":
 			c.SessionID = 0
 		case "help":
@@ -72,7 +80,11 @@ func (c *Cli) Executor(in string) {
 	    execute-assembly                              - Run a .NET application
 	    inline-execute                                - Run a Beacon Object File
         shellcode-inject                              - Inject shellcode into running process
-	    back                                          - Exit interactive mode
+        token_info                                    - Show current process token informations
+		token_rev2self                                - Release any access token that have been created or stolen
+		token_make                                    - Impersonate a user
+		token_steal                                   - Steal a process access token
+        back                                          - Exit interactive mode
 	    help                                          - Print help menu
 	`,
 			)
@@ -150,6 +162,23 @@ func (c *Cli) Executor(in string) {
 	case "exit":
 		handlers.HandleExit(c.Engine, cmdargs)
 	default:
+		for _, cmds := range c.UserCommands {
+			for _, cmd := range cmds {
+				if cmd.Name == command {
+					c.L.Push(cmd.Callback)
+					c.L.Push(lua.LNumber(c.SessionID))
+					for _, arg := range cmdargs {
+						c.L.Push(lua.LString(arg))
+					}
+
+					if err := c.L.PCall(len(cmdargs)+1, 0, nil); err != nil {
+						fmt.Printf("Failed to run script: %v\n", err)
+					}
+					return
+				}
+			}
+		}
+
 		fmt.Printf("Unknown command: %s\n", command)
 		return
 	}

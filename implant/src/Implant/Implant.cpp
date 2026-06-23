@@ -40,8 +40,8 @@ VOID ImplantRegister() {
  * @brief Initialize implant object
  */
 BOOL ImplantInitialize() {
-    g_Implant.SessionID = RandomUint32();
-
+    g_Implant.SessionID                   = RandomUint32();
+    g_Implant.IsImpersonating             = FALSE;
     g_Implant.Interface.SessionID         = g_Implant.SessionID;
     g_Implant.Interface.BeaconDataInt     = BeaconDataInt;
     g_Implant.Interface.BeaconDataExtract = BeaconDataExtract;

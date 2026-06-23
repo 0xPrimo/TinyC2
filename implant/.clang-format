@@ -4,7 +4,7 @@ Standard: c++17
 IndentWidth: 4
 TabWidth: 4
 UseTab: Never
-ColumnLimit: 100
+ColumnLimit: 150
 PointerAlignment: Left
 SpacesInParens: Custom
 SpacesInParensOptions:

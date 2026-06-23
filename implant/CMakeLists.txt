@@ -41,6 +41,7 @@ add_executable(Implant
     src/Command/CommandJob.cpp
     src/Command/CommandInlineExecute.cpp
     src/Command/CommandInjectShellcode.cpp
+    src/Command/CommandToken.cpp
 
     # coff loader
     #
@@ -52,6 +53,7 @@ add_executable(Implant
     #
     src/Stdlib/Base64.cpp
     src/Stdlib/Fs.cpp
+    src/Stdlib/String.cpp
 )
 
 target_link_options(Implant PRIVATE
