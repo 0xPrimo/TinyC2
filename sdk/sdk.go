@@ -20,5 +20,5 @@ type IListener interface {
 	Stop() error
 
 	// MakePic return PIC
-	MakePic(uint32) ([]byte, error)
+	MakePic(uint32) ([]byte, []byte, error)
 }
