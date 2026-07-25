@@ -63,6 +63,7 @@ func (c *Cli) completeInteractive(args []string, currword string) []prompt.Sugge
 			{Text: "token_rev2self", Description: "Revert token"},
 			{Text: "token_make", Description: "Impersonate a user"},
 			{Text: "token_steal", Description: "Steal a process access token"},
+			{Text: "connect", Description: "Connect to an smb peer implant"},
 		}, currword, true)
 	}
 

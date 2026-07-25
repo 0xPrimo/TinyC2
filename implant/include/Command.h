@@ -44,3 +44,5 @@ BOOL CommandTokenInfo( json& args, string artifact, json& result );
 BOOL CommandTokenRev2Self( json& args, string artifact, json& result );
 BOOL CommandTokenMake( json& args, string artifact, json& result );
 BOOL CommandTokenSteal( json& args, string artifact, json& result );
+BOOL CommandPivotConnect( json& args, string artifact, json& result );
+BOOL CommandPivotRequest( json& args, string artifact, json& result );

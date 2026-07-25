@@ -61,5 +61,7 @@ func NewEngine(path string) *Engine {
 		}
 	}
 
+	SetupImplantTaskResultHandlers()
+
 	return engine
 }

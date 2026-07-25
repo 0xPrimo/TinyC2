@@ -7,42 +7,124 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 	"github.com/pterm/pterm"
 )
 
-type TaskResultHandler func(TaskResult) error
+type TaskResultHandler func(*Engine, uint32, TaskResult) error
 
-var TaskResultHandlers = map[string]TaskResultHandler{
-	"channel.switch":   handleOutput,
-	"channel.regsiter": handleOutput,
-	"cd":               handleOutput,
-	"cp":               handleOutput,
-	"shell":            handleOutput,
-	"upload":           handleOutput,
-	"run":              handleOutput,
-	"execute-assembly": handleOutput,
-	"inline-execute":   handleOutput,
-	"inject-shellcode": handleOutput,
-	"ps":               handlePs,
-	"download":         handleDownload,
-	"job.list":         handleJobList,
-	"token.info":       handleTokenInfo,
-	"token.rev2self":   handleOutput,
-	"token.make":       handleOutput,
-	"token.steal":      handleOutput,
+var TaskResultHandlers map[string]TaskResultHandler
+
+func SetupImplantTaskResultHandlers() {
+	TaskResultHandlers = map[string]TaskResultHandler{
+		"channel.switch":   handleOutput,
+		"channel.regsiter": handleOutput,
+		"cd":               handleOutput,
+		"cp":               handleOutput,
+		"shell":            handleOutput,
+		"upload":           handleOutput,
+		"run":              handleOutput,
+		"execute-assembly": handleOutput,
+		"inline-execute":   handleOutput,
+		"inject-shellcode": handleOutput,
+		"ps":               handlePs,
+		"download":         handleDownload,
+		"job.list":         handleJobList,
+		"token.info":       handleTokenInfo,
+		"token.rev2self":   handleOutput,
+		"token.make":       handleOutput,
+		"token.steal":      handleOutput,
+		"pivot.connect":    handlePivotConnect,
+		"pivot.proxy":      handlePivotProxy,
+		"pivot.request":    handlePivotRequest,
+	}
 }
 
 func (e *Engine) ImplantTaskResultDispatch(id uint32, tasks []TaskResult) {
 	// process tasks
 	for _, task := range tasks {
 		if handler, ok := TaskResultHandlers[task.Name]; ok {
-			if err := handler(task); err != nil {
+			if err := handler(e, id, task); err != nil {
 				logger.Error("failed to process task result %s result: %v", task.Name, err)
 			}
 		}
 	}
+}
+
+func handlePivotRequest(engine *Engine, id uint32, task TaskResult) error {
+	return nil
+}
+
+func handlePivotConnect(engine *Engine, id uint32, task TaskResult) error {
+	var checkin ImplantResponse
+	var request []byte
+
+	err := json.Unmarshal([]byte(task.Artifact), &checkin)
+	if err != nil {
+		logger.Error("error parsing JSON: %v", err)
+		return err
+	}
+
+	if !engine.ImplantExists(checkin.ID) {
+		request, err = engine.ImplantRegister(checkin.ID, "p2p/smb")
+		if err != nil {
+			logger.Error("failed to register peer-2-peer smb implant")
+			return err
+		}
+
+	} else {
+		logger.Error("peer implant already registred")
+	}
+
+	// send back peer implant queued tasks
+	engine.ImplantTaskExecute(id, map[string]any{
+		"name":     "pivot.request",
+		"args":     []uint32{checkin.ID},
+		"artifact": base64.StdEncoding.EncodeToString(request),
+	})
+
+	return nil
+}
+
+func handlePivotProxy(engine *Engine, id uint32, task TaskResult) error {
+	var responses []ImplantResponse
+	var request []byte
+
+	err := json.Unmarshal([]byte(task.Artifact), &responses)
+	if err != nil {
+		logger.Error("error parsing JSON: %v", err)
+		return err
+	}
+
+	for _, response := range responses {
+		if engine.ImplantExists(response.ID) {
+
+			// update implant last seen
+			implant := engine.Implants[response.ID]
+			implant.Seen = time.Now()
+			engine.Implants[response.ID] = implant
+
+			// task result processing
+			engine.ImplantTaskResultDispatch(response.ID, response.Tasks)
+
+			request = engine.ImplantGetTaskRequests(response.ID)
+		} else {
+			logger.Error("peer implant not registred")
+			return fmt.Errorf("peer implant is not registred")
+		}
+
+		if request != nil {
+			engine.ImplantTaskExecute(id, map[string]any{
+				"name":     "pivot.request",
+				"args":     []uint32{response.ID},
+				"artifact": base64.StdEncoding.EncodeToString(request),
+			})
+		}
+	}
+
+	return nil
 }
 
 type FileInfo struct {
@@ -51,7 +133,7 @@ type FileInfo struct {
 	Data string `json:"data"`
 }
 
-func handleDownload(task TaskResult) error {
+func handleDownload(engine *Engine, id uint32, task TaskResult) error {
 	var file FileInfo
 
 	err := json.Unmarshal([]byte(task.Artifact), &file)
@@ -101,7 +183,7 @@ type ProcessInfo struct {
 	PPid    uint32 `json:"ppid"`
 }
 
-func handlePs(task TaskResult) error {
+func handlePs(engine *Engine, id uint32, task TaskResult) error {
 	var pslist []ProcessInfo
 	err := json.Unmarshal([]byte(task.Artifact), &pslist)
 	if err != nil {
@@ -138,7 +220,7 @@ type JobInfo struct {
 	ID uint32 `json:"id"`
 }
 
-func handleJobList(task TaskResult) error {
+func handleJobList(engine *Engine, id uint32, task TaskResult) error {
 	var joblist []JobInfo
 	err := json.Unmarshal([]byte(task.Artifact), &joblist)
 	if err != nil {
@@ -168,8 +250,8 @@ func handleJobList(task TaskResult) error {
 	return nil
 }
 
-func handleOutput(task TaskResult) error {
-	logger.Success("recieved output:\n%s\n", task.Output)
+func handleOutput(engine *Engine, id uint32, task TaskResult) error {
+	logger.Success("received output:\n%s\n", task.Output)
 	return nil
 }
 
@@ -178,7 +260,7 @@ type TokenInfo struct {
 	ImpersonationToken string `json:"impersonation_token"`
 }
 
-func handleTokenInfo(task TaskResult) error {
+func handleTokenInfo(engine *Engine, id uint32, task TaskResult) error {
 	var token TokenInfo
 	err := json.Unmarshal([]byte(task.Artifact), &token)
 	if err != nil {

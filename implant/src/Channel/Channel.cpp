@@ -15,11 +15,7 @@ BOOL ChannelInitialize() {
 
     InitializeListHead( &g_ChannelList );
 
-    if (!ChannelRegister(
-            g_DefaultChannel,
-            sizeof( g_DefaultChannel ),
-            g_DefaultChannelConfig,
-            sizeof( g_DefaultChannelConfig ) )) {
+    if (!ChannelRegister( g_DefaultChannel, sizeof( g_DefaultChannel ), g_DefaultChannelConfig, sizeof( g_DefaultChannelConfig ) )) {
         printf( "[-] Failed to register channel\n" );
         return FALSE;
     }
@@ -32,7 +28,7 @@ BOOL ChannelInitialize() {
     return TRUE;
 }
 
-// IChannelRegister register new communication channel
+// ChannelRegister register new communication channel
 //
 BOOL ChannelRegister( PVOID BaseAddr, DWORD Size, VOID* Config, DWORD ConfigSize ) {
     PCHANNEL channel = NULL;
@@ -43,8 +39,7 @@ BOOL ChannelRegister( PVOID BaseAddr, DWORD Size, VOID* Config, DWORD ConfigSize
         return FALSE;
     }
 
-    channel->Interface =
-        (IChannel*)HeapAlloc( GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof( IChannel ) );
+    channel->Interface = (IChannel*)HeapAlloc( GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof( IChannel ) );
     if (channel->Interface == NULL) {
         return FALSE;
     }

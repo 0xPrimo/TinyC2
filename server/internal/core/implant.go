@@ -117,9 +117,10 @@ func (e *Engine) ImplantGetTaskRequests(id uint32) []byte {
 	if len(tasks) > 0 {
 		fmt.Println()
 		logger.Info("sent %d bytes to implant %X", len(data), id)
+		return data
 	}
 
-	return data
+	return nil
 }
 
 func (e *Engine) ImplantExists(id uint32) bool {
@@ -534,5 +535,19 @@ func (e *Engine) ImplantTokenSteal(id uint32, pid uint32) {
 		"name":     "token.steal",
 		"args":     []uint32{pid},
 		"artifact": nil,
+	})
+}
+
+func (e *Engine) ImplantPivotConnect(id uint32, pipe string) {
+	cfg, err := pack.BofPack("z", []string{pipe})
+	if err != nil {
+		logger.Error("failed to pack peer connection config: %v", err)
+		return
+	}
+
+	e.ImplantTaskExecute(id, map[string]any{
+		"name":     "pivot.connect",
+		"args":     []uint32{1},
+		"artifact": base64.StdEncoding.EncodeToString(cfg),
 	})
 }

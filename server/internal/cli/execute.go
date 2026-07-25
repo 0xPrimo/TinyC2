@@ -55,6 +55,8 @@ func (c *Cli) Executor(in string) {
 			handlers.HandleImplantTokenMake(c.Engine, &c.SessionID, cmdargs)
 		case "token_steal":
 			handlers.HandleImplantTokenSteal(c.Engine, &c.SessionID, cmdargs)
+		case "connect":
+			handlers.HandleImplantPivotConnect(c.Engine, &c.SessionID, cmdargs)
 		case "back":
 			c.SessionID = 0
 		case "help":
