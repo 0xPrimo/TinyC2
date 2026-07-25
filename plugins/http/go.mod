@@ -3,7 +3,7 @@ module http
 go 1.26.1
 
 require (
-	github.com/0xPrimo/TinyC2/sdk v0.0.0-20260418155041-e785e8e87ae6
+	github.com/0xPrimo/TinyC2/sdk v0.0.0-20260725190210-0bbca228377f
 	github.com/gin-gonic/gin v1.12.0
 	github.com/goccy/go-yaml v1.19.2
 )
@@ -37,5 +37,4 @@ require (
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
