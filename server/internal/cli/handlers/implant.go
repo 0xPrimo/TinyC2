@@ -260,3 +260,12 @@ func HandleImplantTokenSteal(engine *core.Engine, session *uint32, args []string
 
 	engine.ImplantTokenSteal(*session, uint32(pid))
 }
+
+func HandleImplantPivotConnect(engine *core.Engine, session *uint32, args []string) {
+	if len(args) < 2 {
+		logger.Info("connect [HOST] [PIPE_NAME] ")
+		return
+	}
+	pipe := "\\\\" + args[0] + "\\pipe\\" + args[1]
+	engine.ImplantPivotConnect(*session, pipe)
+}

