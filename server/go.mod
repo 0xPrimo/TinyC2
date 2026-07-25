@@ -3,7 +3,7 @@ module github.com/0xPrimo/TinyC2/server
 go 1.26.1
 
 require (
-	github.com/0xPrimo/TinyC2/sdk v0.0.0-20260418155041-e785e8e87ae6
+	github.com/0xPrimo/TinyC2/sdk v0.0.0-20260725190210-0bbca228377f
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/pterm/pterm v0.12.83
 	github.com/yuin/gopher-lua v1.1.2
