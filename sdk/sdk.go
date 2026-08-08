@@ -22,3 +22,20 @@ type IListener interface {
 	// MakePic return PIC
 	MakePic(uint32) ([]byte, []byte, error)
 }
+
+type IPlugin interface {
+	Initialize(engine IEngine)
+	Meta() map[string]string
+}
+
+type IPluginListener interface {
+	IPlugin
+	NewAdapter() IAdapterListener
+}
+
+type IAdapterListener interface {
+	Start(name string, config string) error
+	Stop() error
+	Config() map[string]any
+	Extension(uint32) ([]byte, []byte, error)
+}

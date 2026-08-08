@@ -20,46 +20,48 @@ type Listener struct {
 	Name      string
 	Interface sdk.IListener
 	Config    string
+
+	sdk.IAdapterListener
 }
 
 func (e *Engine) ListenerStart(plugin string, name string, config string) error {
-	_, exists := e.Listeners[name]
-	if exists {
-		return fmt.Errorf("listener %s already exist", name)
+	if e.Listeners.Has(name) {
+		return fmt.Errorf("listener %s already exists", name)
 	}
 
-	listener, err := e.PluginNewListener(plugin, name, config)
+	pl, ok := e.PluginListener(plugin)
+	if !ok {
+		return fmt.Errorf("unknown plugin %s", plugin)
+	}
+
+	listener := &Listener{
+		ID:               crc32.ChecksumIEEE([]byte(name)),
+		Name:             name,
+		Config:           config,
+		IAdapterListener: pl.NewAdapter(),
+	}
+
+	err := listener.Start(name, config)
 	if err != nil {
 		return err
 	}
 
-	err = listener.Start()
-	if err != nil {
-		return err
-	}
-
-	e.Listeners[name] = Listener{
-		ID:        crc32.ChecksumIEEE([]byte(name)),
-		Name:      name,
-		Config:    config,
-		Interface: listener,
-	}
+	e.Listeners.Set(name, listener)
 
 	return nil
 }
 
 func (e *Engine) ListenerStop(name string) error {
-	listener, exists := e.Listeners[name]
-	if !exists {
-		return fmt.Errorf("listener %s does not exist", name)
+	listener, ok := e.Listeners.Get(name)
+	if !ok {
+		return fmt.Errorf("listener %s doesn't exists", name)
 	}
 
-	err := listener.Interface.Stop()
-	if err != nil {
+	if err := listener.Stop(); err != nil {
 		return err
 	}
 
-	delete(e.Listeners, name)
+	e.Listeners.Delete(name)
 
 	return nil
 }
@@ -69,9 +71,9 @@ func (e *Engine) ListenerList() error {
 		{"ID", "Name", "Config"},
 	}
 
-	for _, listener := range e.Listeners {
+	e.Listeners.ForEach(func(name string, listener *Listener) {
 		table = append(table, []string{pterm.Cyan(fmt.Sprintf("%X", listener.ID)), listener.Name, listener.Config})
-	}
+	})
 
 	pterm.Println()
 	pterm.DefaultTable.
@@ -86,14 +88,13 @@ func (e *Engine) ListenerList() error {
 }
 
 func (e *Engine) ListenerGenerate(name string, dest string) error {
-	listener, exists := e.Listeners[name]
-	if !exists {
-		return fmt.Errorf("listener not found")
+
+	listener, ok := e.Listeners.Get(name)
+	if !ok {
+		return fmt.Errorf("listener %s doesn't exists", name)
 	}
 
-	// generate pic with id 0. id 0 means default implant channel
-	//
-	pic, args, err := listener.Interface.MakePic(0)
+	pic, args, err := listener.Extension(0)
 	if err != nil {
 		return err
 	}
@@ -105,7 +106,7 @@ func (e *Engine) ListenerGenerate(name string, dest string) error {
 
 	// build cmake project
 	//
-	src, _ := filepath.Abs("./implant")
+	src, _ := filepath.Abs("../implant")
 	binary, err := buildCmakeProject(src, pic, args)
 	if err != nil {
 		return err

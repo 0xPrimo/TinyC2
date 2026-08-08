@@ -4,17 +4,19 @@ import (
 	"os"
 
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
+	"github.com/0xPrimo/TinyC2/server/internal/pkg/store"
+	"github.com/0xPrimo/TinyC2/server/internal/plug"
+	"github.com/pterm/pterm"
 
 	"gopkg.in/yaml.v3"
 )
 
 type Engine struct {
-	// TODO: use refrence instead of value for Plugins, Listeners and Impalnts map
-	//
-	Plugins   map[string]Plugin
-	Implants  map[uint32]Implant
-	Listeners map[string]Listener
-	Config    EngineConfig
+	Implants map[uint32]Implant
+	Config   EngineConfig
+
+	Listeners *store.Store[string, *Listener]
+	plug.IPluginManager
 }
 
 type EngineConfig struct {
@@ -48,16 +50,18 @@ func NewEngine(path string) *Engine {
 	}
 
 	engine := &Engine{
-		Plugins:   make(map[string]Plugin),
-		Implants:  make(map[uint32]Implant),
-		Listeners: make(map[string]Listener),
-		Config:    config,
+		Implants: make(map[uint32]Implant),
+		Config:   config,
+
+		Listeners:      store.NewStore[string, *Listener](),
+		IPluginManager: plug.NewManager(),
 	}
 
 	for _, plugin := range config.Plugins {
-		err := engine.PluginRegister(plugin.Name, plugin.Path)
+		meta, err := engine.PluginRegister(engine, plugin.Path)
 		if err != nil {
 			logger.Error("failed to register plugin: %v", err)
+			return nil
 		}
 	}
 

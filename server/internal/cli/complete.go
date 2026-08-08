@@ -101,7 +101,7 @@ func (c *Cli) completeInteractiveChannel(args []string, currword string) []promp
 
 		switch subcmd {
 		case "register":
-			for name := range c.Engine.Listeners {
+			for name := range c.Engine.Listeners.GetAll() {
 				suggest = append(suggest, prompt.Suggest{Text: name})
 			}
 			return prompt.FilterHasPrefix(suggest, currword, true)
@@ -171,13 +171,15 @@ func (c *Cli) completeListener(args []string, currword string) []prompt.Suggest 
 
 		switch subcmd {
 		case "start":
-			for name := range c.Engine.Plugins {
-				suggest = append(suggest, prompt.Suggest{Text: name})
+			for _, pl := range c.Engine.PluginList() {
+				if pl.Type == "listener" {
+					suggest = append(suggest, prompt.Suggest{Text: pl.Name})
+				}
 			}
 			return prompt.FilterHasPrefix(suggest, currword, true)
 
 		case "stop", "generate":
-			for name := range c.Engine.Listeners {
+			for name := range c.Engine.Listeners.GetAll() {
 				suggest = append(suggest, prompt.Suggest{Text: name})
 			}
 			return prompt.FilterHasPrefix(suggest, currword, true)

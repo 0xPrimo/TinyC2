@@ -219,7 +219,7 @@ func (e *Engine) ImplantChannelRegister(id uint32, name string) error {
 	}
 
 	// generate pic
-	listener, exists := e.Listeners[name]
+	listener, exists := e.Listeners.Get(name)
 	if !exists {
 		logger.Error("listener %s does not exists", name)
 		return nil
@@ -230,7 +230,7 @@ func (e *Engine) ImplantChannelRegister(id uint32, name string) error {
 		return nil
 	}
 
-	pic, args, err := listener.Interface.MakePic(listener.ID)
+	pic, args, err := listener.Extension(listener.ID)
 	if err != nil {
 		logger.Error("MakePic error: %v", err)
 		return nil
