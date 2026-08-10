@@ -1,7 +1,7 @@
 all:
-	go build -buildmode=plugin -o ./bin/http.plugin.so .
-	make -C pic
+	go build -buildmode=plugin -o ./build/http .
+	make -C extension
 
 clean:
 	rm -rf bin
-	make -C pic clean
+	make -C extension clean

@@ -2,9 +2,10 @@ plugins:
   - name: "smb"
     path: "plugins/smb/bin/smb.plugin.so"
   - name: "http"
-    path: "plugins/http/bin/http.plugin.so"
+    path: "plugins/http/build/http"
   - name: "tcp"
     path: "plugins/tcp/build/tcp"
+
 
 crystal-palace:
   lib: "/path/to/crystalpalace.jar"

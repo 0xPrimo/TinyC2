@@ -1,4 +1,4 @@
-package listener
+package adapter
 
 import (
 	"net/http"
@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func CreateHTTPHandler(listener *HTTPListener) func(*gin.Context) {
+func (l *Listener) handler() func(*gin.Context) {
 	return func(c *gin.Context) {
 		body, err := c.GetRawData()
 		if err != nil {
@@ -14,7 +14,7 @@ func CreateHTTPHandler(listener *HTTPListener) func(*gin.Context) {
 			return
 		}
 
-		response, err := listener.Engine.ImplantProcess(listener.Name, body)
+		response, err := l.ImplantProcess(l.name, body)
 		if err != nil {
 			c.JSON(200, gin.H{"message": "processing error"})
 			return
