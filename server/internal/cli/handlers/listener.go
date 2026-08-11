@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/0xPrimo/TinyC2/server/internal/core"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 
@@ -34,7 +36,7 @@ func HandleListenerGenerate(engine *core.Engine, args []string) {
 
 	name := args[0]
 	dest := args[1]
-	err := engine.ListenerGenerate(name, dest)
+	err := engine.ImplantGenerate(name, dest)
 	if err != nil {
 		logger.Error("listener generate %s: %v", name, err)
 		return
@@ -62,11 +64,23 @@ func HandleListenerStart(engine *core.Engine, args []string) {
 }
 
 func HandleListenerList(engine *core.Engine, args []string) {
-	err := engine.ListenerList()
-	if err != nil {
-		logger.Error("listener list: %v", err)
-		return
+	table := pterm.TableData{
+		{"ID", "Name", "Protocol"},
 	}
+
+	for _, listener := range engine.ListenerList() {
+		table = append(table, []string{pterm.Cyan(fmt.Sprintf("%X", listener.ID)), listener.Name, listener.Protocol})
+	}
+
+	pterm.Println()
+	pterm.DefaultTable.
+		WithHasHeader().
+		WithBoxed().
+		WithHeaderStyle(pterm.NewStyle(pterm.FgLightMagenta, pterm.Bold)).
+		WithData(table).
+		Render()
+	pterm.Println()
+
 }
 
 func HandleListenerStop(engine *core.Engine, args []string) {

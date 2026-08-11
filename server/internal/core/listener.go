@@ -2,99 +2,17 @@ package core
 
 import (
 	"fmt"
-	"hash/crc32"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/0xPrimo/TinyC2/sdk"
-
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
-
-	"github.com/pterm/pterm"
 )
 
-type Listener struct {
-	ID        uint32
-	Name      string
-	Interface sdk.IListener
-	Config    string
+func (e *Engine) ImplantGenerate(listenerName string, dest string) error {
 
-	sdk.IAdapterListener
-}
-
-func (e *Engine) ListenerStart(plugin string, name string, config string) error {
-	if e.Listeners.Has(name) {
-		return fmt.Errorf("listener %s already exists", name)
-	}
-
-	pl, ok := e.PluginListener(plugin)
-	if !ok {
-		return fmt.Errorf("unknown plugin %s", plugin)
-	}
-
-	listener := &Listener{
-		ID:               crc32.ChecksumIEEE([]byte(name)),
-		Name:             name,
-		Config:           config,
-		IAdapterListener: pl.NewAdapter(),
-	}
-
-	err := listener.Start(name, config)
-	if err != nil {
-		return err
-	}
-
-	e.Listeners.Set(name, listener)
-
-	return nil
-}
-
-func (e *Engine) ListenerStop(name string) error {
-	listener, ok := e.Listeners.Get(name)
-	if !ok {
-		return fmt.Errorf("listener %s doesn't exists", name)
-	}
-
-	if err := listener.Stop(); err != nil {
-		return err
-	}
-
-	e.Listeners.Delete(name)
-
-	return nil
-}
-
-func (e *Engine) ListenerList() error {
-	table := pterm.TableData{
-		{"ID", "Name", "Config"},
-	}
-
-	e.Listeners.ForEach(func(name string, listener *Listener) {
-		table = append(table, []string{pterm.Cyan(fmt.Sprintf("%X", listener.ID)), listener.Name, listener.Config})
-	})
-
-	pterm.Println()
-	pterm.DefaultTable.
-		WithHasHeader().
-		WithBoxed().
-		WithHeaderStyle(pterm.NewStyle(pterm.FgLightMagenta, pterm.Bold)).
-		WithData(table).
-		Render()
-	pterm.Println()
-
-	return nil
-}
-
-func (e *Engine) ListenerGenerate(name string, dest string) error {
-
-	listener, ok := e.Listeners.Get(name)
-	if !ok {
-		return fmt.Errorf("listener %s doesn't exists", name)
-	}
-
-	pic, args, err := listener.Extension(0)
+	pic, args, err := e.ListenerExtension(listenerName)
 	if err != nil {
 		return err
 	}
@@ -105,7 +23,6 @@ func (e *Engine) ListenerGenerate(name string, dest string) error {
 	// }
 
 	// build cmake project
-	//
 	src, _ := filepath.Abs("../implant")
 	binary, err := buildCmakeProject(src, pic, args)
 	if err != nil {
@@ -113,7 +30,6 @@ func (e *Engine) ListenerGenerate(name string, dest string) error {
 	}
 
 	// write binary
-	//
 	err = os.WriteFile(dest, binary, 0o644)
 	if err != nil {
 		return err
