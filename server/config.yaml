@@ -1,6 +1,6 @@
 plugins:
   - name: "smb"
-    path: "plugins/smb/bin/smb.plugin.so"
+    path: "plugins/smb/build/smb"
   - name: "http"
     path: "plugins/http/build/http"
   - name: "tcp"
