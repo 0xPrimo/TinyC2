@@ -37,5 +37,5 @@ type IAdapterListener interface {
 	Start(name string, config string) error
 	Stop() error
 	Config() map[string]any
-	Extension(uint32) ([]byte, []byte, error)
+	Extension(uint32) ([]byte, error)
 }

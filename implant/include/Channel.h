@@ -56,7 +56,7 @@ typedef struct {
 
 BOOL ChannelInitialize();
 BOOL ChannelLoad( PVOID Destination, PVOID Source, DWORD Size );
-BOOL ChannelRegister( PVOID BaseAddr, DWORD Size, VOID* Config, DWORD ConfigSize );
+BOOL ChannelRegister( PVOID BaseAddr, DWORD Size );
 BOOL ChannelSwitch( DWORD ID );
 BOOL ChannelRemove( DWORD ID );
 VOID ChannelFree( PCHANNEL Channel );

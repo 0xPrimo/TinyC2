@@ -1,11 +1,16 @@
 package adapter
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/0xPrimo/TinyC2/sdk"
@@ -25,7 +30,7 @@ type Listener struct {
 }
 
 func (l *Listener) Start(name string, configPath string) error {
-
+	l.name = name
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return err
@@ -70,7 +75,7 @@ func (l *Listener) Stop() error {
 	return nil
 }
 
-func (l *Listener) Extension(id uint32) ([]byte, []byte, error) {
+func (l *Listener) Extension(id uint32) ([]byte, error) {
 	configArray := []any{
 		uint32(id),
 		l.config.UserAgent,
@@ -101,17 +106,32 @@ func (l *Listener) Extension(id uint32) ([]byte, []byte, error) {
 		configArray = append(configArray, uri)
 	}
 
-	picargs, err := packer.Pack(configArray...)
+	extcfg, err := packer.Pack(configArray...)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to pack configurations: %v", err)
+		return nil, fmt.Errorf("failed to pack configurations: %w", err)
 	}
 
-	data, err := os.ReadFile("../plugins/http/build/http.ext")
+	extdir, _ := filepath.Abs("../plugins/http/extension")
+	resp, err := SendHttp[CplResponse](CPL_SERVER, map[string]any{
+		"action": "link",
+		"params": map[string]any{
+			"spec": filepath.Join(extdir, SPEC_FILE),
+			"file": filepath.Join(extdir, "bin", CAPAB_FILE),
+		},
+		"env": map[string]any{
+			"$CONFIG": hex.EncodeToString(extcfg),
+		},
+	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read extension: %w", err)
+		return nil, err
 	}
 
-	return data, picargs, nil
+	if !resp.Success {
+		return nil, fmt.Errorf("failed to build extension: \n\tmessage: %s\n\tcontext: %s\n\t", resp.Message, resp.Context)
+	}
+
+	pic, _ := base64.StdEncoding.DecodeString(resp.OutputB64)
+	return pic, nil
 }
 
 func (l *Listener) Config() map[string]any {
@@ -132,4 +152,33 @@ func isValidAddress(address string) error {
 
 	_ = listener.Close()
 	return nil
+}
+
+func SendHttp[T any](url string, body map[string]any) (*T, error) {
+	var result T
+
+	reqbody, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(reqbody))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }
