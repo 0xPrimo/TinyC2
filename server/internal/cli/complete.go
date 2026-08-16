@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/0xPrimo/TinyC2/server/internal/core"
 	"github.com/c-bata/go-prompt"
 )
 
@@ -101,16 +102,17 @@ func (c *Cli) completeInteractiveChannel(args []string, currword string) []promp
 
 		switch subcmd {
 		case "register":
-			for name := range c.Engine.Listeners.GetAll() {
-				suggest = append(suggest, prompt.Suggest{Text: name})
+			for _, listener := range c.Engine.ListenerList() {
+				suggest = append(suggest, prompt.Suggest{Text: listener.Name})
 			}
 			return prompt.FilterHasPrefix(suggest, currword, true)
 
 		case "remove", "switch":
 			if implant, ok := c.Engine.Implants[c.SessionID]; ok {
-				for name := range implant.Channels {
-					suggest = append(suggest, prompt.Suggest{Text: name})
-				}
+
+				implant.Channels.ForEach(func(key string, value *core.Channel) {
+					suggest = append(suggest, prompt.Suggest{Text: key})
+				})
 			}
 			return prompt.FilterHasPrefix(suggest, currword, true)
 		}
@@ -179,8 +181,8 @@ func (c *Cli) completeListener(args []string, currword string) []prompt.Suggest 
 			return prompt.FilterHasPrefix(suggest, currword, true)
 
 		case "stop", "generate":
-			for name := range c.Engine.Listeners.GetAll() {
-				suggest = append(suggest, prompt.Suggest{Text: name})
+			for _, listener := range c.Engine.ListenerList() {
+				suggest = append(suggest, prompt.Suggest{Text: listener.Name})
 			}
 			return prompt.FilterHasPrefix(suggest, currword, true)
 		}

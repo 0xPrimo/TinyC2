@@ -12,24 +12,17 @@ import (
 
 func (e *Engine) ImplantGenerate(listenerName string, dest string) error {
 
-	pic, args, err := e.ListenerExtension(listenerName)
+	extension, err := e.ListenerExtension(listenerName)
 	if err != nil {
 		return err
 	}
 
-	// err = os.WriteFile("../debug.pic", pic, 0644)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// build cmake project
 	src, _ := filepath.Abs("../implant")
-	binary, err := buildCmakeProject(src, pic, args)
+	binary, err := buildCmakeProject(src, extension)
 	if err != nil {
 		return err
 	}
 
-	// write binary
 	err = os.WriteFile(dest, binary, 0o644)
 	if err != nil {
 		return err
@@ -38,17 +31,15 @@ func (e *Engine) ImplantGenerate(listenerName string, dest string) error {
 	return nil
 }
 
-func buildCmakeProject(src string, pic []byte, picargs []byte) ([]byte, error) {
+func buildCmakeProject(src string, extension []byte) ([]byte, error) {
 	os.MkdirAll(src+"/build", 0o755)
 
-	// build project
-	//
 	args := []string{
 		"-S", src,
 		"-B", src + "/build",
-		"-DDEFAULT_CHANNEL=" + toCArray(pic),
-		"-DDEFAULT_CHANNEL_CONFIG=" + toCArray(picargs),
+		"-DDEFAULT_CHANNEL=" + toCArray(extension),
 	}
+
 	cmd := exec.Command("cmake", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -66,8 +57,6 @@ func buildCmakeProject(src string, pic []byte, picargs []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// read binary
-	//
 	data, err := os.ReadFile(src + "/build/Implant.exe")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read implant exe: %w", err)

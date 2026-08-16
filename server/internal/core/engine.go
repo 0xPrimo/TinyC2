@@ -2,9 +2,10 @@ package core
 
 import (
 	"os"
+	"os/exec"
 
+	"github.com/0xPrimo/TinyC2/server/internal/listener"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
-	"github.com/0xPrimo/TinyC2/server/internal/pkg/store"
 	"github.com/0xPrimo/TinyC2/server/internal/plug"
 	"github.com/pterm/pterm"
 
@@ -15,8 +16,9 @@ type Engine struct {
 	Implants map[uint32]Implant
 	Config   EngineConfig
 
-	Listeners *store.Store[string, *Listener]
+	//Listeners *store.Store[string, *listener.Listener]
 	plug.IPluginManager
+	listener.IListenerManager
 }
 
 type EngineConfig struct {
@@ -49,9 +51,14 @@ func NewEngine(path string) *Engine {
 		os.Exit(1)
 	}
 
+	pluginManager := plug.NewManager()
+	listenerManager := listener.NewManager(pluginManager)
 	engine := &Engine{
-		Implants: make(map[uint32]Implant),
-		Config:   config,
+		Implants:         make(map[uint32]Implant),
+		Config:           config,
+		IPluginManager:   pluginManager,
+		IListenerManager: listenerManager,
+	}
 
 	// start cpl server
 	cmd := exec.Command("cpl", "server")
@@ -69,6 +76,8 @@ func NewEngine(path string) *Engine {
 			logger.Error("failed to register plugin: %v", err)
 			return nil
 		}
+
+		logger.Success("plugin %s (%s) registered", pterm.Green(meta.Name), meta.Type)
 	}
 
 	SetupImplantTaskResultHandlers()

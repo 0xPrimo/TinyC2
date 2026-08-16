@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/crc32"
 
+	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/store"
 	"github.com/0xPrimo/TinyC2/server/internal/plug"
 )
@@ -11,9 +12,10 @@ import (
 type IListenerManager interface {
 	ListenerStart(plugin string, name string, config string) error
 	ListenerStop(name string) error
-	ListenerExtension(name string) ([]byte, []byte, error)
+	ListenerExtension(name string) ([]byte, error)
 	ListenerConfig(name string) (map[string]any, error)
 	ListenerList() []Meta
+	ListenerGet(name string) (Meta, bool)
 }
 
 type Manager struct {
@@ -70,18 +72,19 @@ func (m *Manager) ListenerStop(name string) error {
 	return nil
 
 }
-func (m *Manager) ListenerExtension(name string) ([]byte, []byte, error) {
+func (m *Manager) ListenerExtension(name string) ([]byte, error) {
 	listener, ok := m.listeners.Get(name)
 	if !ok {
-		return nil, nil, fmt.Errorf("listener %s doesn't exists", name)
+		return nil, fmt.Errorf("listener %s doesn't exists", name)
 	}
 
-	pic, piccfg, err := listener.Extension(0)
+	logger.Info("generating extension with id: %X", listener.ID)
+	pic, err := listener.Extension(listener.ID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return pic, piccfg, nil
+	return pic, nil
 }
 
 func (m *Manager) ListenerConfig(name string) (map[string]any, error) {
@@ -105,4 +108,17 @@ func (m *Manager) ListenerList() []Meta {
 	})
 
 	return lns
+}
+
+func (m *Manager) ListenerGet(name string) (Meta, bool) {
+	listener, ok := m.listeners.Get(name)
+	if !ok {
+		return Meta{}, false
+	}
+
+	return Meta{
+		ID:       listener.ID,
+		Name:     listener.Name,
+		Protocol: listener.Protocol,
+	}, true
 }
