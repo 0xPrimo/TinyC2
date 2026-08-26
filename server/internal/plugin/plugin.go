@@ -1,5 +1,5 @@
-// Package plug plugin management
-package plug
+// Package plugin plugin management
+package plugin
 
 import (
 	"fmt"

@@ -1,24 +1,30 @@
-package core
+package engine
 
 import (
 	"os"
 	"os/exec"
 
+	"github.com/0xPrimo/TinyC2/server/internal/implant"
 	"github.com/0xPrimo/TinyC2/server/internal/listener"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
-	"github.com/0xPrimo/TinyC2/server/internal/plug"
+	"github.com/0xPrimo/TinyC2/server/internal/plugin"
 	"github.com/pterm/pterm"
 
 	"gopkg.in/yaml.v3"
 )
 
 type Engine struct {
-	Implants map[uint32]Implant
-	Config   EngineConfig
-
-	//Listeners *store.Store[string, *listener.Listener]
-	plug.IPluginManager
+	plugin.IPluginManager
 	listener.IListenerManager
+	implant.IImplantManager
+
+	Config EngineConfig
+}
+
+type IEngine interface {
+	implant.IImplantManager
+	listener.IListenerManager
+	plugin.IPluginManager
 }
 
 type EngineConfig struct {
@@ -51,13 +57,15 @@ func NewEngine(path string) *Engine {
 		os.Exit(1)
 	}
 
-	pluginManager := plug.NewManager()
+	pluginManager := plugin.NewManager()
 	listenerManager := listener.NewManager(pluginManager)
+	implantManager := implant.NewManager(listenerManager)
+
 	engine := &Engine{
-		Implants:         make(map[uint32]Implant),
 		Config:           config,
 		IPluginManager:   pluginManager,
 		IListenerManager: listenerManager,
+		IImplantManager:  implantManager,
 	}
 
 	// start cpl server
@@ -79,8 +87,6 @@ func NewEngine(path string) *Engine {
 
 		logger.Success("plugin %s (%s) registered", pterm.Green(meta.Name), meta.Type)
 	}
-
-	SetupImplantTaskResultHandlers()
 
 	return engine
 }

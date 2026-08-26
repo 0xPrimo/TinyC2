@@ -1,4 +1,4 @@
-package plug
+package plugin
 
 import "github.com/0xPrimo/TinyC2/sdk"
 

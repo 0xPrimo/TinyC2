@@ -1,4 +1,4 @@
-package core
+package engine
 
 import (
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"

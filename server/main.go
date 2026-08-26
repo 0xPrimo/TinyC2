@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/0xPrimo/TinyC2/server/internal/cli"
+	"github.com/0xPrimo/TinyC2/server/cmd"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 )
 
@@ -13,6 +13,6 @@ func main() {
 		return
 	}
 
-	cli := cli.NewCli(os.Args[1])
+	cli := cmd.NewCli(os.Args[1])
 	cli.Start()
 }
