@@ -61,6 +61,10 @@ WINSOCK_API_LINKAGE int WSAAPI WS2_32$WSAGetLastError( void );
 WINSOCK_API_LINKAGE SOCKET WSAAPI WS2_32$socket( int af, int type, int protocol );
 #define socket WS2_32$socket
 
+WINSOCK_API_LINKAGE int
+    WSAAPI WS2_32$setsockopt( SOCKET s, int level, int optname, const char* optval, int optlen );
+#define setsockopt WS2_32$setsockopt
+
 WINBASEAPI int KERNEL32$lstrlenA( LPCSTR lpString );
 #define lstrlenA KERNEL32$lstrlenA
 

