@@ -8,7 +8,7 @@ import (
 
 type Implant struct {
 	ID       string
-	meta     map[string]any
+	Meta     map[string]any
 	tasks    []Task
 	channels *store.Store[string, *Channel]
 	seen     time.Time
@@ -18,7 +18,7 @@ func NewImplant(id string) *Implant {
 	return &Implant{
 		ID:       id,
 		channels: store.NewStore[string, *Channel](),
-		meta:     make(map[string]any),
+		Meta:     make(map[string]any),
 	}
 }
 
@@ -73,31 +73,31 @@ func (i *Implant) ChannelList() []Channel {
 func (i *Implant) MetaUpdate(meta map[string]any) {
 	if val, ok := meta["host"]; ok {
 		if host, isString := val.(string); isString {
-			i.meta["hostname"] = host
+			i.Meta["host"] = host
 		}
 	}
 
 	if val, ok := meta["user"]; ok {
 		if user, isString := val.(string); isString {
-			i.meta["user"] = user
+			i.Meta["user"] = user
 		}
 	}
 
 	if val, ok := meta["domain"]; ok {
 		if domain, isString := val.(string); isString {
-			i.meta["domain"] = domain
+			i.Meta["domain"] = domain
 		}
 	}
 
-	if val, ok := meta["process"]; ok {
-		if process, isString := val.(string); isString {
-			i.meta["process"] = process
+	if val, ok := meta["pid"]; ok {
+		if pid, isString := val.(string); isString {
+			i.Meta["pid"] = pid
 		}
 	}
 
 	if val, ok := meta["os"]; ok {
 		if os, isString := val.(string); isString {
-			i.meta["os"] = os
+			i.Meta["os"] = os
 		}
 	}
 }

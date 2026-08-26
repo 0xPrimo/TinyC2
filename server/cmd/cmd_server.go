@@ -119,14 +119,27 @@ var ServerCommandList = []Command{
 		Execute: func(core *Cli, args ...string) error {
 			var rows [][]string
 			for _, implant := range core.Engine.ImplantList() {
+				var status string
+
 				if implant.Alive() {
-					rows = append(rows, []string{implant.ID, implant.ChannelCurrent(), pterm.LightGreen("alive")})
+					status = pterm.Green("alive")
 				} else {
-					rows = append(rows, []string{implant.ID, implant.ChannelCurrent(), pterm.LightRed("dead")})
+					status = pterm.Red("dead")
 				}
+
+				rows = append(rows, []string{
+					implant.ID,
+					implant.ChannelCurrent(),
+					implant.Meta["user"].(string),
+					implant.Meta["host"].(string),
+					implant.Meta["domain"].(string),
+					implant.Meta["pid"].(string),
+					implant.Meta["os"].(string),
+					status,
+				})
 			}
 
-			utils.PrintTable([]string{"ID", "Channel", "Status"}, rows)
+			utils.PrintTable([]string{"ID", "Channel", "User", "Computer", "Domain", "Pid", "Os", "Status"}, rows)
 			return nil
 		},
 	},

