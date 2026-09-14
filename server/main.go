@@ -14,5 +14,9 @@ func main() {
 	}
 
 	cli := cmd.NewCli(os.Args[1])
-	cli.Start()
+	if cli != nil {
+		cli.Start()
+	} else {
+		os.Exit(1337)
+	}
 }

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0xPrimo/TinyC2/server/internal/database"
 	"github.com/0xPrimo/TinyC2/server/internal/listener"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/store"
@@ -18,18 +19,49 @@ import (
 type Manager struct {
 	implants *store.Store[string, *Implant]
 	commands *store.Store[string, Command]
+	db       *database.Database
 	listener.IListenerManager
 }
 
-func NewManager(listenerManager listener.IListenerManager) *Manager {
+func NewManager(db *database.Database, listenerManager listener.IListenerManager) *Manager {
 	manager := &Manager{
 		implants:         store.NewStore[string, *Implant](),
 		commands:         store.NewStore[string, Command](),
+		db:               db,
 		IListenerManager: listenerManager,
 	}
 
 	manager.registerCommands()
+
 	return manager
+}
+
+func (m *Manager) ImplantDBSync() error {
+	var errs []error
+
+	implants, err := m.db.ImplantGetAll()
+	if err != nil {
+		return err
+	}
+
+	for _, meta := range implants {
+		implant, err := m.createImplant(meta.ID, meta.Meta)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to create implant: %v", err))
+			continue
+		}
+
+		for _, ch := range meta.Channels {
+			implant.ChannelAdd(ch.Name, &Channel{
+				Name:     ch.Name,
+				Fallback: ch.Fallback,
+				InUse:    ch.InUse,
+			})
+		}
+	}
+
+	return errors.Join(errs...)
+
 }
 
 func (m *Manager) ImplantExecute(id string, name string, args ...string) error {
@@ -135,7 +167,7 @@ func (m *Manager) ImplantChannelList(id string) ([]Channel, bool) {
 func (m *Manager) pivot(data []byte) {
 	resp, err := m.parse(data)
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("%v", err)
 		return
 	}
 
@@ -160,6 +192,12 @@ func (m *Manager) response(id string) ([]byte, error) {
 	return m.pack(implant.TaskPopAll())
 }
 
+func (m *Manager) createImplant(id string, checkin map[string]any) (*Implant, error) {
+	implant := NewImplant(id, checkin)
+	m.implants.Set(id, implant)
+	return implant, nil
+}
+
 // register
 func (m *Manager) register(id string, listener string, results []TaskResult) ([]byte, error) {
 	var checkin map[string]any
@@ -174,26 +212,23 @@ func (m *Manager) register(id string, listener string, results []TaskResult) ([]
 	}
 
 	// initialize channel object
-	implant := NewImplant(id)
+	implant, err := m.createImplant(id, checkin)
+	if err != nil {
+		return nil, err
+	}
 
-	// add implant built in channel
-	implant.ChannelAdd(listener, &Channel{
-		Name:     listener,
-		Fallback: true,
-		InUse:    true,
-	})
+	// save implant to database
+	err = m.db.ImplantCreate(id, []map[string]any{
+		{
+			"name":     listener,
+			"fallback": true,
+			"in-use":   true,
+		},
+	}, implant.Meta)
 
-	// add implant metadata
-	implant.MetaUpdate(map[string]any{
-		"pid":    checkin["pid"],
-		"host":   checkin["host"],
-		"user":   checkin["user"],
-		"domain": checkin["domain"],
-		"os":     checkin["os"],
-	})
-
-	// save implant
-	m.implants.Set(id, implant)
+	if err != nil {
+		logger.Error("%v", err)
+	}
 
 	magic := map[string]any{
 		"magic": "baadf00d",

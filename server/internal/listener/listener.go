@@ -1,9 +1,11 @@
 package listener
 
 import (
+	"errors"
 	"fmt"
 	"hash/crc32"
 
+	"github.com/0xPrimo/TinyC2/server/internal/database"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/store"
 	"github.com/0xPrimo/TinyC2/server/internal/plugin"
@@ -16,28 +18,52 @@ type IListenerManager interface {
 	ListenerConfig(name string) (map[string]any, error)
 	ListenerList() []Meta
 	ListenerGet(name string) (Meta, bool)
+	ListenerDBSync() error
 }
 
 type Manager struct {
+	db        *database.Database
 	listeners *store.Store[string, *Listener]
+
 	plugin.IPluginManager
 }
 
-func NewManager(pluginManager plugin.IPluginManager) *Manager {
+func NewManager(db *database.Database, pluginManager plugin.IPluginManager) *Manager {
 	return &Manager{
-		IPluginManager: pluginManager,
+		db:             db,
 		listeners:      store.NewStore[string, *Listener](),
+		IPluginManager: pluginManager,
 	}
 }
 
-func (m *Manager) ListenerStart(plugin string, name string, config string) error {
-	if m.listeners.Has(name) {
-		return fmt.Errorf("listener %s already exists", name)
+func (m *Manager) ListenerDBSync() error {
+	var errs []error
+
+	listeners, err := m.db.ListenerGetAll()
+	if err != nil {
+		return err
 	}
 
+	for _, meta := range listeners {
+		listener, err := m.createListener(meta.Protocol, meta.Name, meta.Config)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to start listener: %v", err))
+			continue
+		}
+
+		err = listener.Start(meta.Name, meta.Config)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to start listener: %v", err))
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func (m *Manager) createListener(plugin, name, config string) (*Listener, error) {
 	pl, ok := m.PluginListener(plugin)
 	if !ok {
-		return fmt.Errorf("unknown plugin %s", plugin)
+		return nil, fmt.Errorf("unknown plugin %s", plugin)
 	}
 
 	listener := &Listener{
@@ -47,12 +73,30 @@ func (m *Manager) ListenerStart(plugin string, name string, config string) error
 		IAdapterListener: pl.NewAdapter(),
 	}
 
-	err := listener.Start(name, config)
+	m.listeners.Set(name, listener)
+
+	return listener, nil
+}
+
+func (m *Manager) ListenerStart(plugin string, name string, config string) error {
+	if m.listeners.Has(name) {
+		return fmt.Errorf("listener %s already exists", name)
+	}
+
+	listener, err := m.createListener(plugin, name, config)
 	if err != nil {
 		return err
 	}
 
-	m.listeners.Set(name, listener)
+	err = listener.Start(name, config)
+	if err != nil {
+		return err
+	}
+
+	err = m.db.ListenerCreate(database.Listener{listener.Name, listener.Protocol, config})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

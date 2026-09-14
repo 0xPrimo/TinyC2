@@ -6,6 +6,7 @@ import (
 	"plugin"
 
 	"github.com/0xPrimo/TinyC2/sdk"
+	"github.com/0xPrimo/TinyC2/server/internal/database"
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/store"
 )
 
@@ -14,17 +15,26 @@ type IPluginManager interface {
 	PluginUnregister(name string) error
 	PluginList() []Meta
 	PluginListener(name string) (*PluginListener, bool)
+	PluginDBSync() error
 }
 
 type Manager struct {
+	db          *database.Database
 	PluginsMeta map[string]Meta
 	Listeners   *store.Store[string, *PluginListener]
 }
 
-func NewManager() *Manager {
-	return &Manager{
+func NewManager(db *database.Database) *Manager {
+	mgr := &Manager{
+		db:        db,
 		Listeners: store.NewStore[string, *PluginListener](),
 	}
+
+	return mgr
+}
+
+func (m *Manager) PluginDBSync() error {
+	return nil
 }
 
 func (m *Manager) PluginRegister(engine sdk.IEngine, path string) (Meta, error) {

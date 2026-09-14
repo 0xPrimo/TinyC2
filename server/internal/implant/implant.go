@@ -14,12 +14,18 @@ type Implant struct {
 	seen     time.Time
 }
 
-func NewImplant(id string) *Implant {
-	return &Implant{
-		ID:       id,
-		channels: store.NewStore[string, *Channel](),
-		Meta:     make(map[string]any),
-	}
+func NewImplant(id string, meta map[string]any) *Implant {
+	var (
+		implant = Implant{
+			ID:       id,
+			channels: store.NewStore[string, *Channel](),
+			Meta:     make(map[string]any),
+		}
+	)
+
+	implant.MetaUpdate(meta)
+
+	return &implant
 }
 
 func (i *Implant) Alive() bool {

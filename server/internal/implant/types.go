@@ -8,6 +8,7 @@ type IImplantManager interface {
 	ImplantCommandList() []Command
 	ImplantChannelList(id string) ([]Channel, bool)
 	ImplantExists(id string) bool
+	ImplantDBSync() error
 }
 
 type Channel struct {
