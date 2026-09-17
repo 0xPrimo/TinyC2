@@ -4,69 +4,70 @@ project(Implant)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_COMPILER /usr/bin/x86_64-w64-mingw32-c++)
 
 include_directories(
-    include
-    external/json/include
+        Implant/include
+        Implant/external/
 )
 
 add_executable(Implant
-    src/Main.cpp
+        Implant/src/Main.cpp
 
-    # implant
-    #
-    src/Implant/Implant.cpp
-    src/Implant/ImplantExecute.cpp
-    src/Implant/ImplantJob.cpp
-    src/Implant/ImplantTransport.cpp
+        # implant
+        #
+        Implant/src/Implant/Implant.cpp
+        Implant/src/Implant/ImplantExecute.cpp
+        Implant/src/Implant/ImplantJob.cpp
+        Implant/src/Implant/ImplantTransport.cpp
 
-    # peer-to-peer
-    src/Peer/Peer.cpp
-    src/Peer/Smb.cpp
+        # peer-to-peer
+        Implant/src/Peer/Peer.cpp
+        Implant/src/Peer/Smb.cpp
 
-    # channel
-    #
-    src/Channel/Channel.cpp
+        # channel
+        #
+        Implant/src/Channel/Channel.cpp
 
-    # commands
-    #
-    src/Command/Command.cpp
-    src/Command/CommandChannel.cpp
-    src/Command/CommandExit.cpp
-    src/Command/CommandPs.cpp
-    src/Command/CommandCd.cpp
-    src/Command/CommandCp.cpp
-    src/Command/CommandShell.cpp
-    src/Command/CommandDownload.cpp
-    src/Command/CommandUpload.cpp
-    src/Command/CommandRun.cpp
-    src/Command/CommandExecuteAssembly.cpp
-    src/Command/CommandJob.cpp
-    src/Command/CommandInlineExecute.cpp
-    src/Command/CommandInjectShellcode.cpp
-    src/Command/CommandToken.cpp
-    src/Command/CommandPivot.cpp
+        # commands
+        #
+        Implant/src/Command/Command.cpp
+        Implant/src/Command/CommandChannel.cpp
+        Implant/src/Command/CommandExit.cpp
+        Implant/src/Command/CommandPs.cpp
+        Implant/src/Command/CommandCd.cpp
+        Implant/src/Command/CommandCp.cpp
+        Implant/src/Command/CommandShell.cpp
+        Implant/src/Command/CommandDownload.cpp
+        Implant/src/Command/CommandUpload.cpp
+        Implant/src/Command/CommandRun.cpp
+        Implant/src/Command/CommandExecuteAssembly.cpp
+        Implant/src/Command/CommandJob.cpp
+        Implant/src/Command/CommandInlineExecute.cpp
+        Implant/src/Command/CommandInjectShellcode.cpp
+        Implant/src/Command/CommandToken.cpp
+        Implant/src/Command/CommandPivot.cpp
 
-    # coff loader
-    #
-    src/Coff/BofApis.cpp
-    src/Coff/CoffLoader.cpp
-    src/Coff/CoffRelocations.cpp
+        # coff loader
+        #
+        Implant/src/Coff/BofApis.cpp
+        Implant/src/Coff/CoffLoader.cpp
+        Implant/src/Coff/CoffRelocations.cpp
 
-    #
-    # stdlib
-    src/Stdlib/Base64.cpp
-    src/Stdlib/Fs.cpp
-    src/Stdlib/String.cpp
-    src/Stdlib/Pipe.cpp
+        #
+        # stdlib
+        Implant/src/Rtlib/Base64.cpp
+        Implant/src/Rtlib/Fs.cpp
+        Implant/src/Rtlib/String.cpp
+        Implant/src/Rtlib/Pipe.cpp
 )
 
 target_link_options(Implant PRIVATE
-    "-Wl,--gc-sections"
-    "-s"
-    "-static"
-    "-static-libgcc"
-    "-static-libstdc++"
+        "-Wl,--gc-sections"
+        "-s"
+        "-static"
+        "-static-libgcc"
+        "-static-libstdc++"
 )
 
 set(DEFAULT_CHANNEL "{0x0}" CACHE STRING "default channel")
@@ -75,17 +76,9 @@ set(DEFAULT_CHANNEL_CONFIG "{0x0}" CACHE STRING "default channel config")
 target_compile_definitions(Implant PRIVATE "DEFAULT_CHANNEL_CONFIG=${DEFAULT_CHANNEL_CONFIG}")
 target_compile_definitions(Implant PRIVATE "DEFAULT_CHANNEL=${DEFAULT_CHANNEL}")
 
-# Debug mode
-# target_compile_options(Implant PRIVATE -g -gcodeview)
-# target_link_options(Implant PRIVATE
-#     -fuse-ld=lld
-#     -g
-#     -Wl,-Bstatic -lstdc++ -lwinpthread -Wl,-Bdynamic
-#     -Wl,--pdb=$<TARGET_FILE_DIR:Implant>/$<TARGET_FILE_BASE_NAME:Implant>.pdb
-# )
-
 target_link_libraries(Implant PRIVATE
-    ntdll
-    crypt32
-    secur32
+        ntdll
+        crypt32
+        secur32
 )
+

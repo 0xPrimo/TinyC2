@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Implant/Implant.vcxproj" Id="3467a684-1a73-44f1-ba82-a37ae5b4b454" />
+</Solution>
