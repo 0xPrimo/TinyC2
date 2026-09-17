@@ -24,12 +24,15 @@ type Cli struct {
 }
 
 func NewCli(path string) *Cli {
-	engine := engine.NewEngine(path)
+	eng, err := engine.NewEngine(path)
+	if err != nil {
+		return nil
+	}
 
 	return &Cli{
 		L:                lua.NewState(),
 		ScriptedCommands: map[string][]UserCommand{},
-		Engine:           engine,
+		Engine:           eng,
 	}
 }
 
@@ -43,11 +46,12 @@ func (c *Cli) Start() {
 		prompt.OptionDescriptionBGColor(prompt.DarkGray),
 	)
 
-	c.luaInitialize()
+	err := c.Engine.Init()
+	if err != nil {
+		panic(err)
+	}
 
-	// Debug
-	c.Executor("listener_start tcp tcp-1 ../plugins/tcp/config.yaml")
-	c.Executor("implant_generate tcp-1 /home/primo/Share/implant.exe")
+	c.luaInitialize()
 
 	defer os.Exit(0)
 	defer c.L.Close()

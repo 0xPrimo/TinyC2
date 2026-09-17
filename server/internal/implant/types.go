@@ -32,9 +32,9 @@ type Command struct {
 }
 
 type Task struct {
-	Cmd       string
-	Args      []any
-	Artifacts []Artifact
+	Cmd      string
+	Args     []any
+	Artifact []byte
 }
 
 type TaskResult struct {
@@ -42,12 +42,6 @@ type TaskResult struct {
 	Status   string
 	Output   string
 	Artifact []byte
-}
-
-type Artifact struct {
-	Name string
-	Path string
-	Data []byte
 }
 type rawTask struct {
 	Name     string `json:"name"`

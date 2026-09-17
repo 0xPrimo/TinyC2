@@ -46,6 +46,19 @@ func (i *Implant) TaskPopAll() []Task {
 	return tasks
 }
 
+func (i *Implant) ChannelUse(name string) {
+	i.channels.ForEach(func(key string, value *Channel) {
+		if value.InUse {
+			value.InUse = false
+		}
+
+		if name == value.Name {
+			value.InUse = true
+		}
+	})
+
+}
+
 func (i *Implant) ChannelAdd(name string, channel *Channel) {
 	i.channels.Set(name, channel)
 }

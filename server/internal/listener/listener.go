@@ -18,6 +18,7 @@ type IListenerManager interface {
 	ListenerConfig(name string) (map[string]any, error)
 	ListenerList() []Meta
 	ListenerGet(name string) (Meta, bool)
+	ListenerGetByID(id uint32) (Meta, bool)
 	ListenerDBSync() error
 }
 
@@ -165,4 +166,21 @@ func (m *Manager) ListenerGet(name string) (Meta, bool) {
 		Name:     listener.Name,
 		Protocol: listener.Protocol,
 	}, true
+}
+
+func (m *Manager) ListenerGetByID(id uint32) (Meta, bool) {
+	var ln Meta
+
+	m.listeners.ForEach(func(name string, listener *Listener) {
+		if listener.ID == id {
+			ln.Name = listener.Name
+			ln.Protocol = listener.Protocol
+			ln.ID = listener.ID
+		}
+	})
+
+	if ln.ID == 0 {
+		return Meta{}, false
+	}
+	return ln, true
 }

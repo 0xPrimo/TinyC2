@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -127,6 +128,11 @@ func (m *Manager) ImplantGenerate(listenerName string) ([]byte, error) {
 	}
 
 	src, _ := filepath.Abs("../implant")
+
+	//os.WriteFile("/home/primo/NetShare/Implant/Implant/include/Config_"+listenerName+".h", []byte("#define CHANNEL_DEFAULT "+toCArray(extension)+"\n"), 0644)
+	//
+	//return nil, fmt.Errorf("implant debug mode")
+
 	binary, err := buildCmakeProject(src, extension)
 	if err != nil {
 		return nil, err
@@ -211,15 +217,22 @@ func (m *Manager) register(id string, listener string, results []TaskResult) ([]
 		return nil, err
 	}
 
-	// initialize channel object
 	implant, err := m.createImplant(id, checkin)
 	if err != nil {
 		return nil, err
 	}
 
+	implant.ChannelAdd(listener, &Channel{
+		ID:       crc32.ChecksumIEEE([]byte(listener)),
+		Name:     listener,
+		Fallback: true,
+		InUse:    true,
+	})
+
 	// save implant to database
 	err = m.db.ImplantCreate(id, []map[string]any{
 		{
+			"id":       crc32.ChecksumIEEE([]byte(listener)),
 			"name":     listener,
 			"fallback": true,
 			"in-use":   true,
@@ -281,12 +294,9 @@ func (m *Manager) pack(tasks []Task) ([]byte, error) {
 
 	for _, task := range tasks {
 		t := map[string]any{
-			"name": task.Cmd,
-			"args": task.Args,
-		}
-
-		if len(task.Artifacts) > 0 {
-			t["artifact"] = string(task.Artifacts[0].Data)
+			"name":     task.Cmd,
+			"args":     task.Args,
+			"artifact": string(task.Artifact),
 		}
 
 		packet = append(packet, t)

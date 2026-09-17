@@ -29,10 +29,10 @@ var ImplantCommandList = []Command{
 
 			var (
 				rows [][]string
-				row  []string
 			)
 
 			for _, channel := range channels {
+				var row []string
 
 				row = append(row, channel.Name)
 
@@ -42,16 +42,16 @@ var ImplantCommandList = []Command{
 					row = append(row, pterm.Red("false"))
 				}
 
-				if channel.Fallback {
-					row = append(row, pterm.Green("true"))
-				} else {
-					row = append(row, pterm.Red("false"))
-				}
+				//if channel.Fallback {
+				//	row = append(row, pterm.Green("true"))
+				//} else {
+				//	row = append(row, pterm.Red("false"))
+				//}
 
 				rows = append(rows, row)
 			}
 
-			utils.PrintTable([]string{"Name", "InUse", "Fallback"}, rows)
+			utils.PrintTable([]string{"Name", "InUse"}, rows)
 			return nil
 		},
 	},

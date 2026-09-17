@@ -38,15 +38,9 @@ var CommandList = []Command{
 			}
 
 			return Task{
-				Cmd:  "upload",
-				Args: []any{destPath},
-				Artifacts: []Artifact{
-					{
-						Name: fileName,
-						Path: srcPath,
-						Data: data,
-					},
-				},
+				Cmd:      "upload",
+				Args:     []any{destPath},
+				Artifact: data,
 			}, nil
 		},
 		process: func(manager *Manager, id string, result TaskResult) {
@@ -61,47 +55,56 @@ var CommandList = []Command{
 		NumberOfArguments: 1,
 		// Example: "channel_register [listener-name]",
 		execute: func(manager *Manager, id string, args ...string) (Task, error) {
-			listener, ok := manager.ListenerGet(args[1])
-			if !ok {
-				return Task{}, errors.New("listener not found")
-			}
-
 			ext, err := manager.ListenerExtension(args[1])
 			if err != nil {
 				return Task{}, err
 			}
 
-			implant, ok := manager.implants.Get(id)
-			if !ok {
-				return Task{}, errors.New("implant is not registered")
-			}
-
-			if implant.channels.Has(args[1]) {
-				return Task{}, errors.New("channel already exists")
-			}
-
-			implant.ChannelAdd(args[1], &Channel{
-				Name:     args[1],
-				ID:       listener.ID,
-				InUse:    false,
-				Fallback: false,
-			})
-
 			return Task{
-				Cmd:  "channel.register",
-				Args: []any{},
-				Artifacts: []Artifact{
-					{
-						Data: ext,
-					},
-				},
+				Cmd:      "channel.register",
+				Args:     []any{},
+				Artifact: []byte(base64.StdEncoding.EncodeToString(ext)),
 			}, err
 		},
 		process: func(manager *Manager, id string, result TaskResult) {
 			println()
+			if result.Status == "success" {
+				var info struct {
+					ID uint32 `json:"id"`
+				}
+
+				err := json.Unmarshal(result.Artifact, &info)
+				if err != nil {
+					logger.Error("%v", err)
+					return
+				}
+
+				listener, ok := manager.ListenerGetByID(info.ID)
+				if !ok {
+					logger.Error("channel not found")
+					return
+				}
+
+				implant, ok := manager.implants.Get(id)
+				if !ok {
+					logger.Error("implant is not found")
+					return
+				}
+
+				implant.ChannelAdd(listener.Name, &Channel{
+					Name:     listener.Name,
+					ID:       listener.ID,
+					InUse:    false,
+					Fallback: false,
+				})
+
+				logger.Success("channel registered successfully")
+			} else {
+				logger.Error("failed to register channel")
+			}
 		},
 	},
-	// channel_unregister
+	// channel_remove
 	{
 		Name:              "channel.remove",
 		Description:       "Unregister a communication channel",
@@ -117,24 +120,52 @@ var CommandList = []Command{
 				return Task{}, errors.New("implant is not registered")
 			}
 
+			// check if channel is registered
 			channel, ok := implant.channels.Get(args[1])
 			if !ok {
 				return Task{}, errors.New("channel not found")
 			}
 
-			if channel.Fallback || channel.InUse {
+			if channel.InUse {
 				return Task{}, errors.New("channel is in use")
 			}
 
-			implant.ChannelRemove(args[1])
-
 			return Task{
-				Cmd:       "channel.remove",
-				Args:      []any{listener.ID},
-				Artifacts: []Artifact{},
+				Cmd:  "channel.remove",
+				Args: []any{listener.ID},
 			}, nil
 		},
 		process: func(manager *Manager, id string, result TaskResult) {
+			println()
+			if result.Status == "success" {
+				var info struct {
+					ID uint32 `json:"id"`
+				}
+
+				err := json.Unmarshal(result.Artifact, &info)
+				if err != nil {
+					logger.Error("%v", err)
+					return
+				}
+
+				listener, ok := manager.ListenerGetByID(info.ID)
+				if !ok {
+					logger.Error("channel not found")
+					return
+				}
+
+				implant, ok := manager.implants.Get(id)
+				if !ok {
+					logger.Error("implant is not registered")
+					return
+				}
+
+				implant.ChannelRemove(listener.Name)
+
+				logger.Success("channel removed successfully")
+			} else {
+				logger.Error("failed to remove channel")
+			}
 		},
 	},
 	// channel_switch
@@ -153,21 +184,44 @@ var CommandList = []Command{
 				return Task{}, errors.New("channel not found")
 			}
 
-			if channel.InUse {
-				return Task{}, errors.New("channel is in use")
-			}
-
-			channel.InUse = false
 			return Task{
-				Cmd:       "channel.switch",
-				Args:      []any{channel.ID},
-				Artifacts: []Artifact{},
+				Cmd:  "channel.switch",
+				Args: []any{channel.ID},
 			}, nil
 		},
 		process: func(manager *Manager, id string, result TaskResult) {
+			println()
+			if result.Status == "success" {
+				var info struct {
+					ID uint32 `json:"id"`
+				}
+
+				err := json.Unmarshal(result.Artifact, &info)
+				if err != nil {
+					logger.Error("%v", err)
+					return
+				}
+
+				listener, ok := manager.ListenerGetByID(info.ID)
+				if !ok {
+					logger.Error("channel not found")
+					return
+				}
+
+				implant, ok := manager.implants.Get(id)
+				if !ok {
+					logger.Error("implant is not registered")
+					return
+				}
+
+				implant.ChannelUse(listener.Name)
+
+				logger.Success("channel switched successfully")
+			} else {
+				logger.Error("failed to switch channel")
+			}
 		},
 	},
-
 	// ps
 	{
 		Name:              "ps",
@@ -175,9 +229,8 @@ var CommandList = []Command{
 		NumberOfArguments: 0,
 		execute: func(manager *Manager, id string, args ...string) (Task, error) {
 			return Task{
-				Cmd:       "ps",
-				Args:      []any{},
-				Artifacts: []Artifact{},
+				Cmd:  "ps",
+				Args: []any{},
 			}, nil
 		},
 		process: func(manager *Manager, id string, result TaskResult) {
@@ -342,13 +395,9 @@ var CommandList = []Command{
 			}
 
 			return Task{
-				Cmd:  "inline-execute",
-				Args: []any{base64.StdEncoding.EncodeToString(bofargs)},
-				Artifacts: []Artifact{
-					{
-						Data: []byte(base64.StdEncoding.EncodeToString(bofraw)),
-					},
-				},
+				Cmd:      "inline-execute",
+				Args:     []any{base64.StdEncoding.EncodeToString(bofargs)},
+				Artifact: []byte(base64.StdEncoding.EncodeToString(bofraw)),
 			}, nil
 		},
 		process: func(manager *Manager, id string, result TaskResult) {
