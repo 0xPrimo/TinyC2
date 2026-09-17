@@ -98,6 +98,19 @@ var CommandList = []Command{
 					Fallback: false,
 				})
 
+				var channels []map[string]any
+
+				implant.channels.ForEach(func(id string, channel *Channel) {
+					channels = append(channels, map[string]any{
+						"id":       channel.ID,
+						"name":     channel.Name,
+						"fallback": channel.Fallback,
+						"in-use":   channel.InUse,
+					})
+				})
+
+				manager.db.ImplantUpdate(id, channels, nil)
+
 				logger.Success("channel registered successfully")
 			} else {
 				logger.Error("failed to register channel")
@@ -162,6 +175,19 @@ var CommandList = []Command{
 
 				implant.ChannelRemove(listener.Name)
 
+				var channels []map[string]any
+
+				implant.channels.ForEach(func(id string, channel *Channel) {
+					channels = append(channels, map[string]any{
+						"id":       channel.ID,
+						"name":     channel.Name,
+						"fallback": channel.Fallback,
+						"in-use":   channel.InUse,
+					})
+				})
+
+				manager.db.ImplantUpdate(id, channels, nil)
+
 				logger.Success("channel removed successfully")
 			} else {
 				logger.Error("failed to remove channel")
@@ -215,6 +241,19 @@ var CommandList = []Command{
 				}
 
 				implant.ChannelUse(listener.Name)
+
+				var channels []map[string]any
+
+				implant.channels.ForEach(func(id string, channel *Channel) {
+					channels = append(channels, map[string]any{
+						"id":       channel.ID,
+						"name":     channel.Name,
+						"fallback": channel.Fallback,
+						"in-use":   channel.InUse,
+					})
+				})
+
+				manager.db.ImplantUpdate(id, channels, nil)
 
 				logger.Success("channel switched successfully")
 			} else {

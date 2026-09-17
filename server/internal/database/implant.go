@@ -19,7 +19,7 @@ type Channel struct {
 	InUse    bool
 }
 
-func (db *Database) ImplantCreate(id string, channels []map[string]any, meta any) error {
+func (db *Database) ImplantCreate(id string, channels map[string]any, meta any) error {
 
 	channelsSerialized, err := encode(channels)
 	if err != nil {
@@ -36,6 +36,37 @@ func (db *Database) ImplantCreate(id string, channels []map[string]any, meta any
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (db *Database) ImplantUpdate(id string, channels []map[string]any, meta any) error {
+
+	if len(channels) > 0 {
+		channelsSerialized, err := encode(channels)
+		if err != nil {
+			return err
+		}
+
+		query := `UPDATE implants SET channels = ? WHERE id = ?`
+		_, err = db.ExecContext(context.Background(), query, channelsSerialized, id)
+		if err != nil {
+			return err
+		}
+	}
+
+	if meta != nil {
+		metaSerialized, err := encode(meta)
+		if err != nil {
+			return err
+		}
+
+		query := `UPDATE implants SET meta = ? WHERE id = ?`
+		_, err = db.ExecContext(context.Background(), query, metaSerialized, id)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

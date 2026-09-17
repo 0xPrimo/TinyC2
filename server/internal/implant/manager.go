@@ -230,13 +230,11 @@ func (m *Manager) register(id string, listener string, results []TaskResult) ([]
 	})
 
 	// save implant to database
-	err = m.db.ImplantCreate(id, []map[string]any{
-		{
-			"id":       crc32.ChecksumIEEE([]byte(listener)),
-			"name":     listener,
-			"fallback": true,
-			"in-use":   true,
-		},
+	err = m.db.ImplantCreate(id, map[string]any{
+		"id":       crc32.ChecksumIEEE([]byte(listener)),
+		"name":     listener,
+		"fallback": true,
+		"in-use":   true,
 	}, implant.Meta)
 
 	if err != nil {
