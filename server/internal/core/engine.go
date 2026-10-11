@@ -2,6 +2,7 @@ package core
 
 import (
 	"os"
+
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 
 	"gopkg.in/yaml.v3"
@@ -17,18 +18,22 @@ type Engine struct {
 }
 
 type EngineConfig struct {
-	Plugins []PluginConfig
+	Plugins       []PluginConfig      `yaml:"plugins"`
+	CrystalPalace CrystalPalaceConfig `yaml:"crystal-palace"`
+}
+
+type CrystalPalaceConfig struct {
+	Lib      string `yaml:"lib"`
+	Pavilion string `yaml:"pavilion"`
 }
 
 type PluginConfig struct {
-	Name string
-	Path string
+	Name string `yaml:"name"`
+	Path string `yaml:"path"`
 }
 
 func NewEngine(path string) *Engine {
-	var (
-		config EngineConfig
-	)
+	var config EngineConfig
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -55,6 +60,8 @@ func NewEngine(path string) *Engine {
 			logger.Error("failed to register plugin: %v", err)
 		}
 	}
+
+	SetupImplantTaskResultHandlers()
 
 	return engine
 }

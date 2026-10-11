@@ -1,25 +1,24 @@
 package listener
 
 import (
-	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
-	"strconv"
 	"sync"
+
+	"tcp/pkg/packer"
 
 	"github.com/0xPrimo/TinyC2/sdk"
 
 	"github.com/goccy/go-yaml"
 )
 
-type TcpListener struct {
+type TCPListener struct {
 	Name   string
 	Engine sdk.IEngine
-	Config TcpConfig
+	Config TCPConfig
 
 	listener net.Listener
 	wg       sync.WaitGroup
@@ -27,32 +26,36 @@ type TcpListener struct {
 	stopOnce sync.Once
 }
 
-type TcpConfig struct {
-	ConnHost string `yaml:"connhost"`
-	ConnPort string `yaml:"connport"`
-	BindHost string `yaml:"bindhost"`
-	BindPort string `yaml:"bindport"`
+type Host struct {
+	IP   string `yaml:"ip"`
+	Port uint16 `yaml:"port"`
 }
 
-func NewTcpListener(engine sdk.IEngine, name string, config string) (sdk.IListener, error) {
+type TCPConfig struct {
+	BindHost string `yaml:"bindhost"`
+	BindPort string `yaml:"bindport"`
+	Host     Host   `yaml:"host"`
+}
+
+func NewTCPListener(engine sdk.IEngine, name string, config string) (sdk.IListener, error) {
 	data, err := os.ReadFile(config)
 	if err != nil {
 		return nil, err
 	}
 
-	var cfg TcpConfig
+	var cfg TCPConfig
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
 
-	return &TcpListener{
+	return &TCPListener{
 		Name:   name,
 		Engine: engine,
 		Config: cfg,
 	}, nil
 }
 
-func (t *TcpListener) Start() error {
+func (t *TCPListener) Start() error {
 	addr := t.Config.BindHost + ":" + t.Config.BindPort
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -66,7 +69,7 @@ func (t *TcpListener) Start() error {
 	return nil
 }
 
-func (t *TcpListener) acceptLoop() {
+func (t *TCPListener) acceptLoop() {
 	defer t.wg.Done()
 
 	for {
@@ -82,48 +85,33 @@ func (t *TcpListener) acceptLoop() {
 		}
 
 		t.wg.Add(1)
-		go TcpHandler(t, conn)
+		go TCPHandler(t, conn)
 	}
 }
 
-func (t *TcpListener) Stop() error {
+func (t *TCPListener) Stop() error {
 	t.listener.Close()
 	return nil
 }
 
-func (t *TcpListener) MakePic(id uint32) ([]byte, error) {
-	// read plugin pic
-	data, err := os.ReadFile("plugins/tcp/bin/channel.x64.pic")
+func (t *TCPListener) MakePic(id uint32) ([]byte, []byte, error) {
+	configArray := []any{}
+
+	configArray = append(configArray, uint32(id))
+	configArray = append(configArray, t.Config.Host.IP)
+	configArray = append(configArray, uint16(t.Config.Host.Port))
+
+	piccfg, err := packer.Pack(configArray...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read pic: %w", err)
+		return nil, nil, fmt.Errorf("failed to pack configurations: %v", err)
 	}
 
-	// patch channel id
-	offset := bytes.Index(data, []byte("LSID"))
-	if offset == -1 {
-		return nil, fmt.Errorf("string 'LSID' not found in pic")
-	}
-	binary.LittleEndian.PutUint32(data[offset:offset+4], id)
-
-	// patch host
-	offset = bytes.Index(data, []byte("123.123.123.123"))
-	if offset == -1 {
-		return nil, fmt.Errorf("string '123.123.123.123' not found in pic")
-	}
-	copy(data[offset:offset+len(t.Config.ConnHost)], []byte(t.Config.ConnHost))
-	data[offset+len(t.Config.ConnHost)] = 0
-
-	// patch port
-	offset = bytes.Index(data, []byte("PORT"))
-	if offset == -1 {
-		return nil, fmt.Errorf("string 'PORT' not found in pic")
+	pic, err := os.ReadFile("plugins/tcp/bin/channel.x64.pic")
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to read pic: %w", err)
 	}
 
-	num, _ := strconv.ParseUint(t.Config.ConnPort, 10, 16)
-	binary.LittleEndian.PutUint16(data[offset:offset+2], uint16(num))
-
-	// return pic
-	return data, nil
+	return pic, piccfg, nil
 }
 
 func IsValidAddress(address string) error {

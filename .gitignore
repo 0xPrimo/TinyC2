@@ -5,3 +5,4 @@ dist
 *.pic
 *.exe
 tinyc2
+compile_flags.txt

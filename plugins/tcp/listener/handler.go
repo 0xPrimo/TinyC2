@@ -1,3 +1,4 @@
+// Package listener
 package listener
 
 import (
@@ -7,7 +8,7 @@ import (
 	"sync"
 )
 
-func TcpHandler(listener *TcpListener, conn net.Conn) {
+func TCPHandler(listener *TCPListener, conn net.Conn) {
 	var tasks sync.WaitGroup
 
 	defer listener.wg.Done()

@@ -1,0 +1,4 @@
+github.com/0xPrimo/TinyC2/sdk v0.0.0-20260725190210-0bbca228377f h1:8ioB5A4Qri0GOa60HKBR4L1/XGJf4FXD8uqcIcLzEe8=
+github.com/0xPrimo/TinyC2/sdk v0.0.0-20260725190210-0bbca228377f/go.mod h1:gDIB8QA5tuhkZ+HvrX6P8cOTCJxHTIURA92EA1Djj1E=
+github.com/goccy/go-yaml v1.19.2 h1:PmFC1S6h8ljIz6gMRBopkjP1TVT7xuwrButHID66PoM=
+github.com/goccy/go-yaml v1.19.2/go.mod h1:XBurs7gK8ATbW4ZPGKgcbrY1Br56PdM69F7LkFRi1kA=

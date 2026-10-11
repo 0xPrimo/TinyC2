@@ -21,6 +21,8 @@ func (c *Cli) Completer(d prompt.Document) []prompt.Suggest {
 			{Text: "plugin", Description: "Manage plugins"},
 			{Text: "listener", Description: "Manage listeners"},
 			{Text: "implant", Description: "Manage implants"},
+			{Text: "script_load", Description: "Load lua script"},
+			{Text: "script_unload", Description: "Unload lua script"},
 			{Text: "help", Description: "Help menu"},
 			{Text: "exit", Description: "Exit"},
 		}, currword, true)
@@ -45,9 +47,23 @@ func (c *Cli) completeInteractive(args []string, currword string) []prompt.Sugge
 	if currword != "" && len(args) <= 1 {
 		return prompt.FilterHasPrefix([]prompt.Suggest{
 			{Text: "channel", Description: "Manage implant channels"},
-			{Text: "whoami", Description: "Get implant context"},
+			{Text: "ps", Description: "List process"},
+			{Text: "cd", Description: "Change directory"},
+			{Text: "cp", Description: "Copy file"},
+			{Text: "shell", Description: "Run shell command via cmd.exe"},
+			{Text: "download", Description: "Download file"},
+			{Text: "upload", Description: "Upload file"},
+			{Text: "run", Description: "Run executable"},
+			{Text: "execute-assembly", Description: "Execute .NET application"},
+			{Text: "inline-execute", Description: "Execute a Beacon Object File"},
+			{Text: "job", Description: "Manage implant jobs"},
 			{Text: "help", Description: "Help menu"},
 			{Text: "back", Description: "Exit interactive mode"},
+			{Text: "token_info", Description: "Show current process token informations"},
+			{Text: "token_rev2self", Description: "Revert token"},
+			{Text: "token_make", Description: "Impersonate a user"},
+			{Text: "token_steal", Description: "Steal a process access token"},
+			{Text: "connect", Description: "Connect to an smb peer implant"},
 		}, currword, true)
 	}
 
@@ -57,6 +73,13 @@ func (c *Cli) completeInteractive(args []string, currword string) []prompt.Sugge
 	switch cmd {
 	case "channel":
 		return c.completeInteractiveChannel(cmdargs, currword)
+	case "job":
+		if len(args) == 1 {
+			return prompt.FilterHasPrefix([]prompt.Suggest{
+				{Text: "stop"},
+				{Text: "list"},
+			}, currword, true)
+		}
 	}
 
 	return []prompt.Suggest{}

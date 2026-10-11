@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/0xPrimo/TinyC2/sdk"
+
 	"github.com/0xPrimo/TinyC2/server/internal/pkg/logger"
 
 	"github.com/pterm/pterm"
@@ -92,7 +93,7 @@ func (e *Engine) ListenerGenerate(name string, dest string) error {
 
 	// generate pic with id 0. id 0 means default implant channel
 	//
-	pic, err := listener.Interface.MakePic(0)
+	pic, args, err := listener.Interface.MakePic(0)
 	if err != nil {
 		return err
 	}
@@ -105,14 +106,14 @@ func (e *Engine) ListenerGenerate(name string, dest string) error {
 	// build cmake project
 	//
 	src, _ := filepath.Abs("./implant")
-	binary, err := buildCmakeProject(src, pic)
+	binary, err := buildCmakeProject(src, pic, args)
 	if err != nil {
 		return err
 	}
 
 	// write binary
 	//
-	err = os.WriteFile(dest, binary, 0644)
+	err = os.WriteFile(dest, binary, 0o644)
 	if err != nil {
 		return err
 	}
@@ -120,16 +121,16 @@ func (e *Engine) ListenerGenerate(name string, dest string) error {
 	return nil
 }
 
-func buildCmakeProject(src string, config []byte) ([]byte, error) {
-
-	os.MkdirAll(src+"/build", 0755)
+func buildCmakeProject(src string, pic []byte, picargs []byte) ([]byte, error) {
+	os.MkdirAll(src+"/build", 0o755)
 
 	// build project
 	//
 	args := []string{
 		"-S", src,
 		"-B", src + "/build",
-		"-DDEFAULT_CHANNEL=" + toCArray(config),
+		"-DDEFAULT_CHANNEL=" + toCArray(pic),
+		"-DDEFAULT_CHANNEL_CONFIG=" + toCArray(picargs),
 	}
 	cmd := exec.Command("cmake", args...)
 	cmd.Stdout = os.Stdout
