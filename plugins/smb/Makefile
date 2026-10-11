@@ -1,7 +1,7 @@
 all:
-	go build -buildmode=plugin -o ./bin/smb.plugin.so .
-	make -C pic
+	go build -buildmode=plugin -o ./build/smb .
+	make -C extension
 
 clean:
-	rm -rf bin
-	make -C pic clean
+	rm -rf build
+	make -C extension clean
